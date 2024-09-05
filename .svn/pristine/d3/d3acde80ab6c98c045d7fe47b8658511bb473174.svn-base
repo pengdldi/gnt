@@ -1,0 +1,44 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<%@ taglib prefix="decorator" uri="http://www.opensymphony.com/sitemesh/decorator" %>
+<%@ taglib prefix="page" uri="http://www.opensymphony.com/sitemesh/page" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<% response.setHeader("Access-Control-Allow-Origin","*"); %>
+
+<!-- <div>
+	<button type="button" class="btn btn-success progress-start" onclick="func_timeClickevt()">
+		<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-right-square-fill" viewBox="0 0 16 16">
+			<path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2zm5.5 10a.5.5 0 0 0 .832.374l4.5-4a.5.5 0 0 0 0-.748l-4.5-4A.5.5 0 0 0 5.5 4v8z"></path>
+		</svg>
+	</button>
+	<div class="progress" role="progressbar" aria-label="Success example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+		<div id="progressbar" class="bg-success" style="width: 0%"></div>
+	</div>
+</div>
+	<div class="progress-parent">
+		<div class="progress-child">0시</div>
+		<div class="progress-child"><a class="center">1시</a></div>
+		<div class="progress-child"><a class="center">2시</a></div>
+		<div class="progress-child"><a class="center">3시</a></div>
+		<div class="progress-child"><a class="center">4시</a></div>
+		<div class="progress-child"><a class="center">5시</a></div>
+		<div class="progress-child"><a class="center">6시</a></div>
+		<div class="progress-child"><a class="center">7시</a></div>
+		<div class="progress-child"><a class="center">8시</a></div>
+		<div class="progress-child"><a class="center">9시</a></div>
+		<div class="progress-child"><a class="center">10시</a></div>
+		<div class="progress-child"><a class="center">11시</a></div>
+		<div class="progress-child"><a class="center">12시</a></div>
+		<div class="progress-child"><a class="center">13시</a></div>
+		<div class="progress-child"><a class="center">14시</a></div>
+		<div class="progress-child"><a class="center">15시</a></div>
+		<div class="progress-child"><a class="center">16시</a></div>
+		<div class="progress-child"><a class="center">17시</a></div>
+		<div class="progress-child"><a class="center">18시</a></div>
+		<div class="progress-child"><a class="center">19시</a></div>
+		<div class="progress-child"><a class="center">20시</a></div>
+		<div class="progress-child"><a class="center">21시</a></div>
+		<div class="progress-child"><a class="center">22시</a></div>
+		<div class="progress-child"><a class="center">23시</a></div>
+	</div> -->

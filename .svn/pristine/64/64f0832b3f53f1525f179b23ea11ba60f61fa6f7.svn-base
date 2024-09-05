@@ -1,0 +1,10 @@
+package com.szone.domain.dto;
+
+import lombok.Data;
+
+@Data
+public class Szone {
+	private String uuid;
+	private String link_id;
+	private String geom;
+}

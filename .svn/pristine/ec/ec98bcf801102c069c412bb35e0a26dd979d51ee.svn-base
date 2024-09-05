@@ -1,0 +1,191 @@
+/**
+ * Version : 1.0 
+ * 파일명: mainMapFunc.js 
+ * 작성일자 : 2023-09-10
+ * 설명 : mainbaseMap.jsp 작동함수 정의
+ */
+let szoneUnitLayer;
+let waitingLineLayer;
+let laneLayer;
+let roadLayer;
+let snodeLayer;
+let hoverStyle;
+
+let coordinate;
+let lane_no;
+let waiting_line;
+
+let overlay;
+const srsName5179 = 'EPSG:5179';
+const defaultzoom = 20;
+
+function func_showWaitingLineMap() {
+	//음영구간도로(통합) 레이어
+	waitingLineLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'waiting_tmp',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:waiting_tmp'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	//차선 레이어
+	laneLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'lane_link',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:lane_link'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	//차로 레이어
+	roadLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'road_link',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:road_link'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	//교차로 노드
+	snodeLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'smtl_node',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:smtl_node'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	mapView = new ol.View({
+		projection: srsName5179,
+		center: [centerX, centerY], //변수로 담아오는 걸로 추후수정
+		zoom: defaultzoom,
+		maxZoom: 19.5,
+		minZoom: 13 //12.8
+	});
+	
+	baseMap = new ol.Map({
+		layers: [backgroudLayer,laneLayer,roadLayer,snodeLayer,waitingLineLayer],
+		target: 'map',
+		view: mapView
+	});
+	
+	hoverStyle = new ol.style.Style({
+		stroke: new ol.style.Stroke({
+			color: 'rgba(255, 0, 0, 1)', // 빨간색 윤곽선
+			width: 5,
+		}),
+		fill: new ol.style.Fill({
+			color: '#eeeeee', // 빨간색 채우기 (투명도 0.1)
+		}),
+	});
+}
+
+/*let lane_no = 0;
+let waiting_line = 0;*/
+let lane_no_tmp = 0;
+let waiting_line_tmp = 0;
+function func_waitingLineMouseOver(evt) {
+let properties = 0;
+	baseMap.on('pointermove', function(evt) {
+		let zoom = mapView.getZoom();
+		if (zoom >= 17.5) {
+		coordinate = evt.coordinate;
+		const viewResolution = mapView.getResolution();
+		const url = waitingLineLayer.getSource().getFeatureInfoUrl(
+			coordinate,
+			viewResolution,
+			srsName5179,
+			{'INFO_FORMAT' : 'application/json'}
+		);
+		if(url) {
+			fetch(url).then(response => response.json()).then((result) => {
+				const tmp = JSON.parse(JSON.stringify(result));
+				if (tmp.features[0] === undefined) {
+					popupNode.style.display = 'none';
+					lane_no_tmp = 0;
+					waiting_line_tmp = 0;
+					resetWaitingPopup();
+				} else {
+					properties = tmp.features[0].properties;
+					lane_no_tmp = properties.lane_no;
+					waiting_line_tmp = properties.waiting_line;
+				}
+			});
+		}
+		if (lane_no_tmp == 0) {} 
+		else {
+			if ( lane_no_tmp == lane_no && waiting_line_tmp == waiting_line) {} 
+			else {
+				resetWaitingPopup();
+				lane_no = properties.lane_no;
+				waiting_line = properties.waiting_line;
+				drawWaitingPopup();
+			}
+		}
+			evt.preventDefault();
+		}
+	});
+}
+
+function resetWaitingPopup() {
+	let resetPopList = document.querySelectorAll('.reset-pop');
+	for(var i=0; i<resetPopList.length; i++) {
+		resetPopList[i].remove();
+	}
+}
+
+function drawWaitingPopup() {
+	const laneno = popupNode.querySelector("#lane_no");
+	const waitline = popupNode.querySelector("#waiting_line");
+	
+	let lanenoTh = '';
+	let waitlineTd = '';
+	
+
+	lanenoTh += '<th class="reset-pop">'+lane_no+'차로</th>';
+	waitlineTd += '<th class="reset-pop">'+waiting_line+'(m)</th>';
+	
+	laneno.insertAdjacentHTML('afterend',lanenoTh);
+	waitline.insertAdjacentHTML('afterend',waitlineTd);
+	
+	overlay = new ol.Overlay({
+		element: popupNode,
+		autoPan: {
+			animation: {
+				duration: 400,
+			},
+		},
+	})
+	
+	popupNode.style.display = 'block';
+	overlay.setPosition(coordinate);
+	baseMap.addOverlay(overlay);
+}

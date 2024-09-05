@@ -1,0 +1,120 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+</head>
+<body>
+<div id="popup" class="ol-popup jw6" style="display: none;" >
+	<p id="road_name" class="reset jw2"></p>
+	<button id="popup-detail-button" onclick="func_ajaxGetInfo(URL_GET_DEVICE_INFO)"type="button" class="btn btn-secondary btn-sm" style="position:absolute;right:8px;top:38px; --bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">[상세보기]</button>
+	<div>
+		<table class="jw5 jw7">
+			<tr class="jw4">
+				<th class="jw1" id="lane_no"></th>
+			</tr>
+			<tr class="jw4">
+				<td class="jw1" id="slevel">유형</td>
+			</tr>
+			<tr class="jw4">
+				<td class="jw1" id="note">내용</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div id="detail" style="display:none;width:500px;height:700px; position:absolute;left:50%;top:50%;margin-left:-15%; margin-top:-20%;background-color:#fff;border:4px solid #000080; padding-top:28px;">
+	<a id="detail-closer" class="ol-popup-closer" onclick="func_resetDetail()"></a>
+	<p id="road_name" class="reset jw8"></p>
+	<p id="device_name" class="reset"></p>
+	<table class="border border-1 table jw5 jw7" style="margin:15px;">
+		<tr class="jw4">
+			<th id="device" class="table-light jw1"></th>
+		</tr>
+		<tr class="jw4">
+			<td id="device_id" class="jw1">ID</td>
+		</tr>
+	</table>
+	<table class="border border-1 table" id="smtlDetail" style="display:none;">
+		<tr>
+			<th id="clicked_id" class="reset" colspan="4" class="table-light"></th>
+		</tr>
+		<tr>
+			<td id="lane_no"></td>
+		</tr>
+		<tr>
+			<td id="slevel">음영유형</td>
+		</tr>
+		<tr>
+			<td id="spd">속도(km/h)</td>
+		</tr>
+		<tr>
+			<td id="vol">교통량</td>
+		</tr>
+		<tr>
+			<td id="waiting_line">대기행렬</td>
+		</tr>
+	</table>
+	<table class="border border-1 table" id="vdslDetail" style="display:none;">
+		<tr>
+			<th id="clicked_id" class="reset" colspan="4" class="table-light"></th>
+		</tr>
+		<tr>
+			<td id="lane_no"></td>
+		</tr>
+		<tr>
+			<td id="slevel">음영유형</td>
+		</tr>
+		<tr>
+			<td id="spd">속도(km/h)</td>
+		</tr>
+		<tr>
+			<td id="vol">교통량</td>
+		</tr>
+		<tr>
+			<td id="occ">점유시간(msec)</td>
+		</tr>
+		<tr>
+			<td id="waiting_line">대기행렬</td>
+		</tr>
+		<tr>
+			<td id="errCode">오류코드</td>
+		</tr>
+	</table>
+	<table class="border border-1 table" id="cctvDetail" style="display:none;">
+		<tr>
+			<th id="clicked_id" class="reset" colspan="4" class="table-light"></th>
+		</tr>
+		<tr>
+			<td id="lane_no"></td>
+		</tr>
+		<tr>
+			<td id="slevel">음영유형</td>
+		</tr>
+		<tr>
+			<td id="spd">속도(km/h)</td>
+		</tr>
+	</table>
+	<table class="border border-1 table" id="lidarDetail" style="display:none;">
+		<tr>
+			<th id="clicked_id" class="reset" colspan="4" class="table-light"></th>
+		</tr>
+		<tr>
+			<td id="lane_no"></td>
+		</tr>
+		<tr>
+			<td id="slevel">음영유형</td>
+		</tr>
+		<tr>
+			<td id="spd">속도(km/h)</td>
+		</tr>
+		<tr>
+			<td id="inout">inout</td>
+		</tr>
+	</table>
+</div>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/common/common.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/map/szoneMapEvent.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/map/szoneMapFunc.js"></script>
+</body>
+</html>
+

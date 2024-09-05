@@ -1,0 +1,520 @@
+/**
+ * Version : 1.0 
+ * 파일명: mainMapFunc.js 
+ * 작성일자 : 2023-09-10
+ * 설명 : mainbaseMap.jsp 작동함수 정의
+ */ 
+let moctlinkLayer;
+let szoneUnitLayer;
+let szoneEachLayer;
+let laneLayer;
+let roadLayer;
+let snodeLayer;
+
+let coordinate;
+let overlay;
+const srsName5179 = 'EPSG:5179';
+const defaultzoom = 14;
+
+let lane_no = 0;
+let node_id;
+
+let smtlDetail;
+let vdsDetail;
+let cctvDetail;
+let lidarDetail;
+
+let roadname = popupNode.querySelector("#road_name");
+let laneno = popupNode.querySelector("#lane_no");
+let slevel = popupNode.querySelector("#slevel");
+let note = popupNode.querySelector("#note");
+
+//let detailNode = document.getElementById("detail");
+
+function func_showSzoneMap() {
+	//표준링크 레이어
+	moctlinkLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'moct_link_224',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:moct_link_224'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	//음영구간도로(통합) 레이어
+	szoneUnitLayer = new ol.layer.Tile({
+		visible: false,
+		name : 'szone_unit',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:szone_unit'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	//차선 레이어
+	laneLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'lane_link',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:lane_link'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	//차로 레이어
+	roadLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'road_link',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:road_link'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	//교차로 노드
+	snodeLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'smtl_node',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:smtl_node'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	//음영구간도로(개별) 레이어
+	szoneEachLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'szone_each',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:szone_each'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	mapView = new ol.View({
+		projection: srsName5179,
+		center: [centerX, centerY], //변수로 담아오는 걸로 추후수정
+		zoom: defaultzoom,
+		maxZoom: 19.5,
+		minZoom: 13 //12.8
+	});
+	
+	baseMap = new ol.Map({
+		layers: [backgroudLayer,moctlinkLayer,laneLayer,roadLayer,szoneEachLayer,szoneUnitLayer],
+		target: 'map',
+		view: mapView
+	});
+}
+
+function func_szoneMapClickEvt(evt) {
+
+	baseMap.on('singleclick', function(evt) {
+		let zoom = mapView.getZoom();
+		let urlLayer;
+		coordinate = evt.coordinate;
+		if(zoom < 17.5) {
+			urlLayer = szoneUnitLayer;
+			gubun = URL_GET_SZONE_UNIT_INFO;
+		} else {
+			urlLayer = szoneEachLayer;
+			gubun = URL_GET_SZONE_EACH_INFO;
+		}
+
+		const viewResolution = mapView.getResolution();
+		const url = urlLayer.getSource().getFeatureInfoUrl(
+			coordinate,
+			viewResolution,
+			srsName5179,
+			{'INFO_FORMAT' : 'application/json'}
+		);
+		if(url) {
+			fetch(url).then(response => response.json()).then((result) => {
+				const tmp = JSON.parse(JSON.stringify(result));
+
+				if (tmp.features[0] === undefined) {
+				} else {
+					const properties = tmp.features[0].properties;
+					if (properties.lane_no === undefined) {
+						link_id = properties.link_id;
+						node_id = properties.node_id;
+					} else {
+						link_id = properties.link_id;
+						lane_no = properties.lane_no;
+						node_id = properties.node_id;
+					}
+					func_ajaxGetInfo(gubun);
+				}
+				
+			});
+			evt.preventDefault();
+		}
+	});
+}
+
+function func_ajaxGetInfo(URL_NUM) {
+	$.ajax({
+		url: func_createUrl(URL_NUM),
+		type: "POST",
+		async: false,
+		contentType: "application/json",
+		dataType: "json",
+		data : func_createParmater(URL_NUM),
+		success: function (result) {
+			func_resultDataParser(result, URL_NUM);
+		},
+		error: function (request, status, error) {
+			console.log(status);
+			console.log("code:" + request.status + "\n" + "message:" + request.responseText + "\n" + "error:" + error);
+		}
+	});
+}
+
+function func_createUrl(URL_NUM){
+	const url = arrUrlList[URL_NUM];
+	return url;
+}
+
+function func_createParmater(URL_NUM){
+	var obj = {};
+	
+	if (gubun == URL_GET_SZONE_UNIT_INFO) {
+		lane_no = 0;
+	} else {
+		
+	}
+	switch (URL_NUM){
+		case URL_GET_SZONE_UNIT_INFO: {
+			obj = {
+				'link_id' : link_id,
+				'node_id' : node_id
+			};
+			break;
+		}
+		case URL_GET_SZONE_EACH_INFO: {
+			obj = {
+				'link_id' : link_id,
+				'lane_no' : lane_no,
+				'node_id' : node_id
+			};
+			break;
+		}
+		case URL_GET_DEVICE_INFO: {
+			obj = {
+				'link_id' : link_id,
+				'lane_no' : lane_no,
+				'node_id' : node_id
+			};
+			break;
+		}
+	}
+	return JSON.stringify(obj);
+}
+
+function func_resultDataParser(result, URL_NUM) {
+	switch (URL_NUM) {
+		case URL_GET_SZONE_UNIT_INFO: {
+			drawPopup(result);
+			break;
+		}
+		case URL_GET_SZONE_EACH_INFO: {
+			drawPopup(result);
+			break;
+		}
+		case URL_GET_DEVICE_INFO: {
+			drawPopupDetail(result);
+			break;
+		}
+	}
+}
+
+function drawPopup(result) {
+	const szoneList = result.szoneInfo;
+	const device_cnt = result.device_cnt[0].device_cnt;
+	/* 음영구간 유형 조회 */
+	//도로명 넣기
+	//roadname.textContent = szoneList[0].road_name;
+	let jw = szoneList[0].road_name+'<a id="popup-closer" class="ol-popup-closer jw3"></a>';
+	roadname.innerHTML = jw;
+	//차로, 음영구간 유형, 음영구간 내용 넣기
+	let lanenoTh = '';
+	let slevelTd = '';
+	let noteTd = '';
+	for (let i=0; i<szoneList.length; i++){
+		lanenoTh += '<th class="reset-pop">'+szoneList[i].lane_note+'</th>';
+		slevelTd += '<td class="reset-pop">'+szoneList[i].slevel+'</td>';
+		noteTd += '<td class="reset-pop">'+szoneList[i].slevel_note+'</td>';
+	}
+	
+	laneno.insertAdjacentHTML('afterend',lanenoTh);
+	slevel.insertAdjacentHTML('afterend',slevelTd);
+	note.insertAdjacentHTML('afterend',noteTd);
+	popupNode.style.display = 'block';
+	
+	
+	overlay = new ol.Overlay({
+		element: popupNode,
+		autoPan: {
+			animation: {
+				duration: 400,
+			},
+		},
+	})
+	
+	overlay.setPosition(coordinate);
+	//popups.push(overlay);	
+	baseMap.addOverlay(overlay);
+	
+	/* 차로, 장치별 상세보기 조회 */
+	if (device_cnt == '0') { //해당 도로, 차로에 장치가 하나도 없으면 [상세보기] 버튼 안 보임
+		popupNode.querySelector("#popup-detail-button").style.display = 'none';
+	} else {
+		popupNode.querySelector("#popup-detail-button").style.display = '';
+	}
+}
+
+function drawPopupDetail(result) {
+	resetCase(RESET_DEV);
+	
+	let smtl = result.smtlInfo;
+	let vds = result.vdsInfo;
+	let cctv = result.cctvInfo;
+	let lidar = result.lidarInfo;
+	
+	let detailRoad = detailNode.querySelector("#road_name"); 
+	let detailDName = detailNode.querySelector("#device_name");
+	let detailDevice = detailNode.querySelector("#device");
+	let detailDeviceID = detailNode.querySelector("#device_id");
+	
+	//detailRoad.textContent = "구간: "+roadname.textContent;
+	let jw2 = "구간: "+roadname.textContent+'<a id="detail-closer" class="ol-popup-closer" onclick="func_resetDetail()"></a>';
+	detailRoad.innerHTML = jw2;
+	
+	smtlDetail = result.smtlDetail;
+	vdsDetail = result.vdsDetail;
+	cctvDetail = result.cctvDetail;
+	lidarDetail = result.lidarDetail;
+	
+	let dname = '';
+	let deviceTh = '';
+	let deviceIdTd = ''
+	
+	if (smtl.length > 0) {
+		dname += '스마트교차로 검지기 ';
+		deviceTh += '<th class="reset-dev">스마트교차로</th>';
+		for (let i=0; i<smtl.length; i++) {
+			deviceIdTd += '<td id="'+smtl[i].ctv_id+'" class="reset-dev">';
+			deviceIdTd += '<button type="button" class="btn btn-outline-success" onclick="func_showDeviceInfo(8,\'';
+			deviceIdTd += smtl[i].ctv_id+'\')">';
+			deviceIdTd += smtl[i].ctv_id;
+			deviceIdTd += '</button>';
+		}
+		deviceIdTd += '</td>';
+	}
+	
+	if (vds.length > 0) {
+		dname += 'VDS ';
+		deviceTh += '<th class="reset-dev">VDS</th>';
+		for (let i=0; i<vds.length; i++) {
+			deviceIdTd += '<td id="'+vds[i].vds_id+'" class="reset-dev">';
+			deviceIdTd += '<button type="button" class="btn btn-outline-success" onclick="func_showDeviceInfo(9,\'';
+			deviceIdTd += vds[i].vds_id+'\')">';
+			deviceIdTd += vds[i].vds_id;
+			deviceIdTd += '</button>';
+		}
+		deviceIdTd += '</td>';
+	}
+	
+	if (cctv.length > 0) {
+		dname += 'CCTV ';
+		deviceTh += '<th class="reset-dev">CCTV</th>';
+		for (let i=0; i<cctv.length; i++) {
+			deviceIdTd += '<td id="'+cctv[i].cctv_id+'" class="reset-dev">';
+			deviceIdTd += '<button id="device-id-button" type="button" class="btn btn-outline-success" onclick="func_showDeviceInfo(10,\'';
+			deviceIdTd += cctv[i].cctv_id+'\')">';
+			deviceIdTd += cctv[i].cctv_id;
+			deviceIdTd += '</button>';
+		}
+		deviceIdTd += '</td>';
+	}
+	
+	if (lidar.length > 0) {
+		dname += 'LIDAR ';
+		deviceTh += '<th class="reset-dev">LIDAR</th>';
+		for (let i=0; i<lidar.length; i++) {
+			deviceIdTd += '<td id="'+lidar[i].lidar_id+'" class="reset-dev">';
+			deviceIdTd += '<button id="device-id-button" type="button" class="btn btn-outline-success" onclick="func_showDeviceInfo(11,\'';
+			deviceIdTd += lidar[i].lidar_id+'\')">';
+			deviceIdTd += lidar[i].lidar_id;
+			deviceIdTd += '</button>';
+		}
+		deviceIdTd += '</td>';
+	}
+	detailDName.textContent = "수집장치: "+dname;
+	detailDevice.insertAdjacentHTML('afterend',deviceTh);
+	detailDeviceID.insertAdjacentHTML('afterend',deviceIdTd);
+	detailNode.style.display = 'block';
+}
+
+function func_showDeviceInfo(num, deviceId) {
+	resetCase(RESET_DEL);
+	
+	let detailCliedId = detailNode.querySelector("#clicked_id");
+	
+	let smtlTable= document.getElementById("smtlDetail");
+	let smtlLaneno = smtlTable.querySelector("#lane_no");
+	let smtlSlevel = smtlTable.querySelector("#slevel");
+	let smtlSpd = smtlTable.querySelector("#spd");
+	let smtlVol = smtlTable.querySelector("#vol");
+	let smtlWaiting = smtlTable.querySelector("#waiting_line");
+	
+	let vdslTable = document.getElementById("vdslDetail");
+	let vdslLaneno = vdslTable.querySelector("#lane_no");
+	let vdslSlevel = vdslTable.querySelector("#slevel");
+	let vdslSpd = vdslTable.querySelector("#spd");
+	let vdslVol = vdslTable.querySelector("#vol");
+	let vdslOcc = vdslTable.querySelector("#occ");
+	let vdslWaiting = vdslTable.querySelector("#waiting_line");
+	let vdslErr = vdslTable.querySelector("#errCode");
+	
+	let cctvTable= document.getElementById("cctvDetail");
+	let cctvLaneno = cctvTable.querySelector("#lane_no");
+	let cctvSlevel = cctvTable.querySelector("#slevel");
+	let cctvSpd = cctvTable.querySelector("#spd");
+	
+	let lidarTable= document.getElementById("lidarDetail");
+	let lidarLaneno = lidarTable.querySelector("#lane_no");
+	let lidarSlevel = lidarTable.querySelector("#slevel");
+	let lidarSpd = lidarTable.querySelector("#spd");
+	let lidarInOut = lidarTable.querySelector("#inout");
+	
+	detailCliedId.textContent = '장치ID : '+deviceId;
+	
+	//공통
+	let detailLaneTd = '';
+	let detailSlevelTd = '';
+	let detailSpdTd = '';
+	
+	//only smtl, vdsl
+	let detailVolTd = '';
+	let detailWaitingTd = '';
+	
+	//only vdsl
+	let detailOccTd = '';
+	let detailErrTd = '';
+	
+	//only lidar
+	let detailInoutTd = '';
+	
+	switch(num) {
+		case GET_SMTL_INFO : {
+			for (var i=0; i<smtlDetail.length; i++) {
+				if (smtlDetail[i].ctv_id == deviceId) {
+					detailLaneTd += '<td class="reset-del">'+smtlDetail[i].lane_no+'</td>';
+					detailSlevelTd += '<td class="reset-del">'+smtlDetail[i].slevel+'</td>';
+					detailSpdTd += '<td class="reset-del">'+smtlDetail[i].smtl_spd+'</td>';
+					detailVolTd += '<td class="reset-del">'+smtlDetail[i].smtl_vol+'</td>';
+					detailWaitingTd += '<td class="reset-del">'+smtlDetail[i].smtl_waiting_line+'</td>';
+				}
+			}
+			smtlLaneno.insertAdjacentHTML('afterend',detailLaneTd);
+			smtlSlevel.insertAdjacentHTML('afterend',detailSlevelTd);
+			smtlSpd.insertAdjacentHTML('afterend',detailSpdTd);
+			smtlVol.insertAdjacentHTML('afterend',detailVolTd);
+			smtlWaiting.insertAdjacentHTML('afterend',detailWaitingTd);
+			smtlTable.style.display = 'block';
+			break;
+		}
+		case GET_VDS_INFO : {
+			for (var i=0; i<vdsDetail.length; i++) {
+				if (vdsDetail[i].vds_id == deviceId) {
+					detailLaneTd += '<td class="reset-del">'+vdsDetail[i].lane_no+'</td>';
+					detailSlevelTd += '<td class="reset-del">'+vdsDetail[i].slevel+'</td>';
+					detailSpdTd += '<td class="reset-del">'+vdsDetail[i].vds_spd+'</td>';
+					detailVolTd += '<td class="reset-del">'+vdsDetail[i].vds_vol+'</td>';
+					detailOccTd += '<td class="reset-del">'+vdsDetail[i].vds_occ+'</td>';
+					detailWaitingTd += '<td class="reset-del">'+vdsDetail[i].vds_waiting_line+'</td>';
+					detailErrTd += '<td class="reset-del">'+vdsDetail[i].vds_err_code+'</td>';
+				}
+			}
+			vdslLaneno.insertAdjacentHTML('afterend',detailLaneTd);
+			vdslSlevel.insertAdjacentHTML('afterend',detailSlevelTd);
+			vdslSpd.insertAdjacentHTML('afterend',detailSpdTd);
+			vdslVol.insertAdjacentHTML('afterend',detailVolTd);
+			vdslOcc.insertAdjacentHTML('afterend',detailOccTd);
+			vdslWaiting.insertAdjacentHTML('afterend',detailWaitingTd);
+			vdslErr.insertAdjacentHTML('afterend',detailErrTd);
+			vdslTable.style.display = 'block';
+			break;
+		}
+		case GET_CCTV_INFO : {
+			//차로
+			for (var i=0; i<cctvDetail.length; i++) {
+				if (cctvDetail[i].cctv_id == deviceId) {
+					detailLaneTd += '<td class="reset-del">'+cctvDetail[i].lane_no+'</td>';
+					detailSlevelTd += '<td class="reset-del">'+cctvDetail[i].slevel+'</td>';
+					detailSpdTd += '<td class="reset-del">'+cctvDetail[i].cctv_spd+'</td>';
+				}
+			}
+			
+			cctvLaneno.insertAdjacentHTML('afterend',detailLaneTd);
+			cctvSlevel.insertAdjacentHTML('afterend',detailSlevelTd);
+			cctvSpd.insertAdjacentHTML('afterend',detailSpdTd);
+			cctvTable.style.display = 'block';
+			break;
+		}
+		case GET_LIDAR_INFO : {
+			//차로
+			for (var i=0; i<lidarDetail.length; i++) {
+				if (lidarDetail[i].lidar_id == deviceId) {
+					detailLaneTd += '<td class="reset-del">'+lidarDetail[i].lane_no+'</td>';
+					detailSlevelTd += '<td class="reset-del">'+lidarDetail[i].slevel+'</td>';
+					detailSpdTd += '<td class="reset-del">'+lidarDetail[i].lidar_spd+'</td>';
+					detailInoutTd += '<td class="reset-del">'+lidarDetail[i].lidar_in_out+'</td>';
+				}
+			}
+			lidarLaneno.insertAdjacentHTML('afterend',detailLaneTd);
+			lidarSlevel.insertAdjacentHTML('afterend',detailSlevelTd);
+			lidarSpd.insertAdjacentHTML('afterend',detailSpdTd);
+			lidarInOut.insertAdjacentHTML('afterend',detailInoutTd);
+			lidarTable.style.display = 'block';
+			break;
+		}
+	}
+}

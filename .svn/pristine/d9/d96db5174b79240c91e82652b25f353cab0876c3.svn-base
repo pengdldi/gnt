@@ -1,0 +1,819 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mapDao">
+	
+	<select id="selectSzoneUnit" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			moct_link_224 
+		where 
+			link_id in (select link_id from szone);
+	</select>
+	
+	<select id="selectLane" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			lane_link;
+	</select>
+	
+	<select id="selectSzone" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			szone
+		<where>
+			and lane_no = #{param}
+		</where>
+	</select>
+	
+	<select id="szoneUnitInfo" resultType="map" parameterType="map">
+		select 
+			t1.link_id as link_id,
+			lane_no,
+			lane_no || '차로' as lane_note,
+			'유형' || slevel as slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note,
+			t2.road_name as road_name
+		from 
+			szone_each t1
+		left join moct_link_224 t2
+		on
+			t1.link_id = t2.link_id
+		<where>
+			and t1.link_id = #{link_id}
+		</where>
+		order by lane_no;
+	</select>
+	<select id="szoneEachInfo" resultType="map" parameterType="map">
+		select 
+			t1.link_id as link_id,
+			lane_no,
+			lane_no || '차로' as lane_note,
+			'유형' || slevel as slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note,
+			t2.road_name as road_name
+		from 
+			szone_each t1
+		left join moct_link_224 t2
+		on
+			t1.link_id = t2.link_id
+		<where>
+			and t1.link_id = #{link_id}
+			and t1.lane_no = #{lane_no}
+		</where>
+		order by lane_no
+	</select>
+	
+	<select id="smtl" resultType="map" parameterType="map">
+		select link_id, ctv_id
+		from 
+		(
+			select
+				t1.link_id,
+				t1.lane_no,
+				t1.node_id,
+				t2.ctv_id
+			from
+				szone_each t1
+			left join
+			(
+				select 
+					link_id, 
+					lane_no, 
+					node_id, 
+					ctv_id 
+				from 
+					smtl_link
+			)t2
+			on t1.link_id = t2.link_id
+			and t1.lane_no = t2.lane_no
+			and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.ctv_id is not null
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no ) t3
+		group by link_id, ctv_id
+	</select>
+	
+	<select id="vds" resultType="map" parameterType="map">
+		select link_id, vds_id
+		from 
+		(
+			select
+				t1.link_id,
+				t1.lane_no,
+				t1.node_id,
+				t2.vds_id
+			from
+				szone_each t1
+			left join
+			(
+				select 
+					link_id, 
+					lane_no, 
+					node_id, 
+					vds_id 
+				from 
+					vdsl_link
+			)t2
+			on t1.link_id = t2.link_id
+			and t1.lane_no = t2.lane_no
+			and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.vds_id is not null
+<!-- 				<if test = "lane_no == 0">
+					and t2.vds_id is not null
+				</if> -->
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no ) t3
+		group by link_id, vds_id
+	</select>
+	
+	<select id="cctv" resultType="map" parameterType="map">
+		select link_id, cctv_id
+		from 
+		(
+			select
+				t1.link_id, 
+				t1.lane_no, 
+				t1.node_id, 
+				t2.cctv_id
+			from
+				szone_each t1
+			left join 
+			(
+				select 
+					link_id, 
+					lane_no, 
+					node_id, 
+					cctv_id 
+				from 
+					cctv_link
+			)t2
+			on t1.link_id = t2.link_id
+			and t1.lane_no = t2.lane_no
+			and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.cctv_id is not null
+<!-- 				<if test = "lane_no == 0">
+					and t2.cctv_id is not null
+				</if> -->
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no ) t3
+		group by link_id, cctv_id
+	</select>
+	
+	<select id="lidar" resultType="map" parameterType="map">
+		select link_id, lidar_id
+		from 
+		(
+			select
+				t1.link_id,
+				t1.lane_no,
+				t1.node_id,
+				t2.lidar_id
+			from
+				szone_each t1
+			left join
+			(
+				select 
+					link_id, 
+					lane_no, 
+					node_id, 
+					lidar_id 
+				from 
+					lidar_link
+			)t2
+			on t1.link_id = t2.link_id
+			and t1.lane_no = t2.lane_no
+			and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.lidar_id is not null
+<!-- 				<if test = "lane_no == 0">
+					and t2.vds_id is not null
+				</if> -->
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no ) t3
+		group by link_id, lidar_id
+	</select>
+	
+	<select id="smtlDetail" resultType="map" parameterType="map">
+		with szone_smtl as 
+		(
+			select
+				t1.link_id, 
+				t1.lane_no, 
+				t1.node_id,
+				t1.slevel, 
+				t2.ctv_id
+			from
+				szone_each t1
+			left join 
+			(
+				select
+					link_id,
+					node_id,
+					lane_no,
+					ctv_id
+				from
+					smtl_link
+			) t2
+			on 
+				t1.link_id = t2.link_id
+				and t1.lane_no = t2.lane_no
+				and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.ctv_id is not null
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no
+		)
+		select 
+			t3.link_id link_id,
+			t3.ctv_id ctv_id,
+			t3.lane_no || '차로' lane_no,
+			t3.slevel slevel,
+			coalesce(text(t5.spd),'-') smtl_spd,
+			coalesce(text(t5.vol),'-') smtl_vol,
+			coalesce(text(t5.waiting_line),'-') smtl_waiting_line
+		from 
+			szone_smtl t3
+		left join
+		(
+			select 
+				link_id, node_id, lane_no, ctv_id, spd, vol, waiting_line, timelevel  
+			from 
+			(
+				select 
+					link_id, 
+					node_id, 
+					lane_no, 
+					ctv_id, 
+					spd,
+					vol,
+					waiting_line,
+					timelevel,
+					row_number() over(partition by link_id, node_id,lane_no,timelevel,ctv_id order by id) as rn
+				from 
+					traffic_smtl
+				where 
+					timelevel = 1 
+			) t4
+			where 
+				rn = 1
+		)t5
+		on
+		t3.link_id = t5.link_id
+		and t3.lane_no = t5.lane_no
+		and t3.node_id = t5.node_id
+		and t3.ctv_id = t5.ctv_id
+	</select>
+	
+	<select id="vdsDetail" resultType="map" parameterType="map">
+		with szone_vds as 
+		(
+			select
+				t1.link_id, 
+				t1.lane_no, 
+				t1.node_id, 
+				t1.slevel,
+				t2.vds_id
+			from
+				szone_each t1
+			left join 
+			(
+				select
+					link_id,
+					node_id,
+					lane_no,
+					vds_id
+				from
+					vdsl_link
+			) t2
+			on 
+				t1.link_id = t2.link_id
+				and t1.lane_no = t2.lane_no
+				and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.vds_id is not null
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no
+		)
+		select 
+			t3.link_id link_id,
+			t3.vds_id vds_id,
+			t3.lane_no || '차로' lane_no,
+			t3.slevel slevel,
+			coalesce(text(t5.spd),'-') vds_spd,
+			coalesce(text(t5.vol),'-') vds_vol,
+			coalesce(text(t5.occ),'-') vds_occ,
+			coalesce(text(t5.waiting_line),'-') vds_waiting_line,
+			coalesce(text(t5.err_code),'-') vds_err_code
+		from 
+			szone_vds t3
+		left join
+		(
+			select 
+				link_id, node_id, lane_no, vds_id, spd, vol,occ, waiting_line, err_code, timelevel  
+			from 
+			(
+				select 
+					link_id, 
+					node_id, 
+					lane_no, 
+					vds_id, 
+					spd,
+					vol,
+					occ,
+					waiting_line,
+					err_code,
+					timelevel,
+					row_number() over(partition by link_id, node_id,lane_no,timelevel,vds_id order by id) as rn
+				from 
+					traffic_vdsl
+				where 
+					timelevel = 1 
+			) t4
+			where 
+				rn = 1
+		)t5
+		on
+		t3.link_id = t5.link_id
+		and t3.lane_no = t5.lane_no
+		and t3.node_id = t5.node_id
+		and t3.vds_id = t5.vds_id
+	</select>
+	
+	<select id="cctvDetail" resultType="map" parameterType="map">
+		with szone_cctv as 
+		(
+			select
+				t1.link_id, 
+				t1.lane_no, 
+				t1.node_id, 
+				t1.slevel,
+				t2.cctv_id
+			from
+				szone_each t1
+			left join 
+			(
+				select
+					link_id,
+					node_id,
+					lane_no,
+					cctv_id
+				from
+					cctv_link
+			) t2
+			on
+				t1.link_id = t2.link_id
+				and t1.lane_no = t2.lane_no
+				and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.cctv_id is not null
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no
+		)
+		select 
+			t3.link_id link_id,
+			t3.cctv_id cctv_id,
+			t3.lane_no || '차로' lane_no,
+			t3.slevel slevel,
+			coalesce(text(t5.spd_cctv),'-') cctv_spd
+		from 
+			szone_cctv t3
+		left join 
+		(
+			select 
+				link_id, node_id, lane_no, spd_cctv, cctv_id, timelevel 
+			from 
+			(
+				select 
+					link_id, 
+					node_id, 
+					lane_no, 
+					spd_cctv, 
+					cctv_id, 
+					timelevel,
+					row_number() over(partition by link_id, node_id,lane_no,timelevel,cctv_id order by id) as rn
+				from 
+					traffic_cctv
+				where 
+					timelevel = 1 
+			) t4
+			where 
+				rn = 1
+		)t5
+		on
+		t3.link_id = t5.link_id
+		and t3.lane_no = t5.lane_no
+		and t3.node_id = t5.node_id
+		and t3.cctv_id = t5.cctv_id
+	</select>
+	
+	<select id="lidarDetail" resultType="map" parameterType="map">
+		with szone_lidar as 
+		(
+			select
+				t1.link_id, 
+				t1.lane_no, 
+				t1.node_id, 
+				t1.slevel,
+				t2.lidar_id
+			from
+				szone_each t1
+			left join 
+			(
+				select
+					link_id,
+					node_id,
+					lane_no,
+					lidar_id
+				from
+					lidar_link
+			) t2
+			on
+				t1.link_id = t2.link_id
+				and t1.lane_no = t2.lane_no
+				and t1.node_id = t2.node_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t1.node_id = #{node_id}
+				and t2.lidar_id is not null
+				<if test = "lane_no != 0">
+					and t1.lane_no = #{lane_no}
+				</if>
+				and t1.timelevel = 1
+			</where>
+			order by t1.link_id, t1.lane_no
+		)
+		select 
+			t3.link_id link_id,
+			t3.lidar_id lidar_id,
+			t3.lane_no || '차로' lane_no,
+			t3.slevel slevel,
+			coalesce(text(t5.spd_lidar),'-') lidar_spd,
+			t5.in_out lidar_in_out
+		from 
+			szone_lidar t3
+		left join 
+		(
+			select 
+				link_id, node_id, lane_no, lidar_id, spd_lidar, in_out, timelevel 
+			from 
+			(
+				select 
+					link_id, 
+					node_id, 
+					lane_no, 
+					lidar_id, 
+					spd_lidar, 
+					in_out,
+					timelevel,
+					row_number() over(partition by link_id, node_id,lane_no,timelevel,lidar_id order by id) as rn
+				from 
+					traffic_lidar
+				where 
+					timelevel = 1 
+			) t4
+			where 
+				rn = 1
+		)t5
+		on
+		t3.link_id = t5.link_id
+		and t3.lane_no = t5.lane_no
+		and t3.node_id = t5.node_id
+		and t3.lidar_id = t5.lidar_id
+	</select>
+
+	<select id="getDevice" resultType="String" parameterType="map">
+		select 
+			device
+		from 
+			smtl_road_link 
+		<where>
+			and link_id = #{link_id}
+			and lane_no = #{lane_no}
+			and node_id = #{node_id}
+		</where>
+		group by device
+	</select>
+	
+	<select id="linkSpdUnit" resultType="map" parameterType="map">
+	
+		select t1.*, 
+			case when t4.spd is null then -99999
+			else t4.spd 
+			end spd,
+			slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note
+		from 
+		(
+			select 
+				sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+			from 
+				smtl_road_link sl
+			left join 
+				smtl_node sn
+			on sl.node_id = sn.node_id
+				<where> 
+					and sl.link_id = #{link_id} 
+					and sl.node_id = #{node_id}
+				</where>
+				group by sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+		)t1
+		left join 
+		(
+			select link_id, lane_no, node_id, spd from (
+				select node_id, link_id, lane_no, spd, row_number() over(partition by node_id, link_id, lane_no order by id) as rn from (
+				select node_id, link_id, lane_no, spd, id from traffic_smtl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				union all
+				select node_id, link_id, lane_no, spd, id from traffic_vdsl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				union all
+				select node_id, link_id, lane_no, spd, id from traffic_cctv where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				union all
+				select node_id, link_id, lane_no, spd, id from traffic_lidar where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				) t2
+			) t3
+		<where> 
+			and rn = 1
+		</where>
+		) t4
+		on t1.link_id = t4.link_id
+		and t1.lane_no = t4.lane_no
+		and t1.node_id = t4.node_id
+		left join 
+			szone_each t5
+		on t1.link_id = t5.link_id
+		and t1.lane_no = t5.lane_no
+		and t1.node_id = t5.node_id
+		order by lane_no
+	</select>
+	
+	<select id="linkSpdEach" resultType="map" parameterType="map">
+	
+		select t1.*, 
+			case when t4.spd is null then -99999
+			else t4.spd 
+			end spd,
+			slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note
+		from 
+		(
+			select 
+				sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+			from 
+				smtl_road_link sl
+			left join 
+				smtl_node sn
+			on sl.node_id = sn.node_id
+				<where> 
+					and sl.link_id = #{link_id} 
+					and sl.node_id = #{node_id}
+					and sl.lane_no = #{lane_no}
+				</where>
+				group by sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+		)t1
+		left join 
+		(
+			select link_id, lane_no, node_id, spd from (
+				select node_id, link_id, lane_no, spd, row_number() over(partition by node_id, link_id, lane_no order by id) as rn from (
+				select node_id, link_id, lane_no, spd, id from traffic_smtl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no} 
+				union all
+				select node_id, link_id, lane_no, spd, id from traffic_vdsl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no}
+				union all
+				select node_id, link_id, lane_no, spd, id from traffic_cctv where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no}
+				union all
+				select node_id, link_id, lane_no, spd, id from traffic_lidar where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no}
+				) t2
+			) t3
+		<where> 
+			and rn = 1
+		</where>
+		) t4
+		on t1.link_id = t4.link_id
+		and t1.lane_no = t4.lane_no
+		and t1.node_id = t4.node_id
+		left join 
+			szone_each t5
+		on t1.link_id = t5.link_id
+		and t1.lane_no = t5.lane_no
+		and t1.node_id = t5.node_id
+		order by lane_no
+	</select>
+	
+	<select id="linkVolUnit" resultType="map" parameterType="map">
+	
+		select t1.*, 
+			case when t4.vol is null then -99999
+			else t4.vol 
+			end vol,
+			slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note
+		from 
+		(
+			select 
+				sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+			from 
+				smtl_road_link sl
+			left join 
+				smtl_node sn
+			on sl.node_id = sn.node_id
+				<where> 
+					and sl.link_id = #{link_id} 
+					and sl.node_id = #{node_id}
+				</where>
+				group by sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+		)t1
+		left join 
+		(
+			select link_id, lane_no, node_id, vol from (
+				select node_id, link_id, lane_no, vol, row_number() over(partition by node_id, link_id, lane_no order by id) as rn from (
+				select node_id, link_id, lane_no, vol, id from traffic_smtl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				union all
+				select node_id, link_id, lane_no, vol, id from traffic_vdsl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				union all
+				select node_id, link_id, lane_no, vol, id from traffic_cctv where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				union all
+				select node_id, link_id, lane_no, vol, id from traffic_lidar where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id}
+				) t2
+			) t3
+		<where> 
+			and rn = 1
+		</where>
+		) t4
+		on t1.link_id = t4.link_id
+		and t1.lane_no = t4.lane_no
+		and t1.node_id = t4.node_id
+		left join 
+			szone_each t5
+		on t1.link_id = t5.link_id
+		and t1.lane_no = t5.lane_no
+		and t1.node_id = t5.node_id
+		order by lane_no
+	</select>
+	
+	<select id="linkVolEach" resultType="map" parameterType="map">
+	
+		select t1.*, 
+			case when t4.vol is null then -99999
+			else t4.vol
+			end vol,
+			slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note
+		from 
+		(
+			select 
+				sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+			from 
+				smtl_road_link sl
+			left join 
+				smtl_node sn
+			on sl.node_id = sn.node_id
+				<where> 
+					and sl.link_id = #{link_id} 
+					and sl.node_id = #{node_id}
+					and sl.lane_no = #{lane_no}
+				</where>
+				group by sl.link_id, sl.lanes, sl.lane_no, sl.node_id, sn.smtl_node_name
+		)t1
+		left join 
+		(
+			select link_id, lane_no, node_id, vol from (
+				select node_id, link_id, lane_no, vol, row_number() over(partition by node_id, link_id, lane_no order by id) as rn from (
+				select node_id, link_id, lane_no, vol, id from traffic_smtl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no} 
+				union all
+				select node_id, link_id, lane_no, vol, id from traffic_vdsl where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no}
+				union all
+				select node_id, link_id, lane_no, vol, id from traffic_cctv where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no}
+				union all
+				select node_id, link_id, lane_no, spd, id from traffic_lidar where timelevel = 1 and link_id = #{link_id} and node_id = #{node_id} and lane_no = #{lane_no}
+				) t2
+			) t3
+		<where> 
+			and rn = 1
+		</where>
+		) t4
+		on t1.link_id = t4.link_id
+		and t1.lane_no = t4.lane_no
+		and t1.node_id = t4.node_id
+		left join 
+			szone_each t5
+		on t1.link_id = t5.link_id
+		and t1.lane_no = t5.lane_no
+		and t1.node_id = t5.node_id
+		order by lane_no
+	</select>
+	
+	<select id="trafficInfo" resultType="map" parameterType="map">
+		select 
+			st_x(geom) positionX, 
+			st_y(geom) positionY, 
+			cross_node_id, 
+			rn 
+			from 
+		(
+			select 
+				*, 
+				row_number() over(order by cross_node_id) as rn 
+			from 
+				crosstraffic_node 
+			<where>
+				node_id = #{node_id} 
+			</where>
+				order by id
+		) t1
+	</select>
+</mapper>

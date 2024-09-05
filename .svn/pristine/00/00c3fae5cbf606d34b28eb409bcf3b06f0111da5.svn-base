@@ -1,0 +1,81 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>음영구간 운영 시스템</title>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/openlayers_v6.4.3.css" type="text/css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/css/bootstrap.min.css" type="text/css">
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/common/jquery-2.1.1.min.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/common/openlayers_v6.4.3.js"></script>
+<script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+<script src="${pageContext.request.contextPath}/js/common/proj4.js"></script>
+<script src="${pageContext.request.contextPath}/js/common/bootstrap.bundle.min.js"></script>
+<script type="text/javascript" src="//map.ngii.go.kr/openapi/wmts_ngiiMap_v6.4.3.js?apikey=598499CCD3240E8AF39197A252D90FDF"></script>
+</head>
+<body>
+<div id="map1" style="width:100%;height:850px;">
+</div>
+<div id="popup" class="ol-popup" style="display: none;" >
+	<a id="popup-closer" class="ol-popup-closer"></a>
+	<button id="popup-detail-button" onclick="func_ajaxGetInfo(URL_GET_DEVICE_INFO)"type="button" class="btn btn-secondary btn-sm" style="position:absolute;right:8px;top:38px; --bs-btn-padding-y: .25rem; --bs-btn-padding-x: .5rem; --bs-btn-font-size: .75rem;">[상세보기]</button>
+	<div>
+		<p id="road_name" class="reset"></p>
+		<table>
+			<tr>
+				<th colspan="5">음영구간</th>
+			</tr>
+			<tr>
+				<th id="lane_no"></th>
+			</tr>
+			<tr>
+				<td id="slevel">유형</td>
+			</tr>
+			<tr>
+				<td id="note">내용</td>
+			</tr>
+		</table>
+	</div>
+</div>
+<div id="detail" style="display:none;width:500px;height:700px; position:absolute;left:50%;top:50%;margin-left:-15%; margin-top:-20%;background-color:#fff;border:solid;">
+	<a id="detail-closer" class="ol-popup-closer"></a>
+	<p id="road_name" class="reset"></p>
+	<p id="device_name" class="reset"></p>
+	<table class="border border-1 table">
+		<tr>
+			<th id="device" class="table-light"></th>
+		</tr>
+		<tr>
+			<td id="device_id">ID</td>
+		</tr>
+	</table>
+	<table class="border border-1 table">
+		<tr>
+			<th id="clicked_id" class="reset" colspan="4" class="table-light"></th>
+		</tr>
+		<tr>
+			<td id="lane_no"></td>
+		</tr>
+		<tr>
+			<td id="slevel">유형</td>
+		</tr>
+		<tr>
+			<td id="spd">spd</td>
+		</tr>
+		<tr>
+			<td id="vol">vol</td>
+		</tr>
+		<tr>
+			<td id="occ">occ</td>
+		</tr>
+	</table>
+	<p>[NOTICE]</p>
+	<p>ON : 정보수집이 가능한 장치 | OFF : 정보수집이 불가능한 장치</p>
+</div>
+
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/map/mainMapFunc.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/map/mainMapEvent.js"></script>
+</body>
+</html>
+

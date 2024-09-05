@@ -1,0 +1,25 @@
+package com.szone.domain.dto;
+
+import lombok.Data;
+
+@Data
+public class Device {
+	//공통
+	private String link_id;
+	private String lane_no;
+	private String slevel;
+	//cctv
+	private String cctv_date;
+	private String ctv_id;
+	private String cctv_spd;
+	private String cctv_vol;
+	private String cctv_occ;
+	
+	//vds
+	private String vds_date;
+	private String vds_id;
+	private String vds_spd;
+	private String vds_vol;
+	private String vds_occ;
+	
+}

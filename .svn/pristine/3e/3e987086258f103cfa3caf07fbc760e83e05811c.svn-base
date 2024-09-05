@@ -1,0 +1,47 @@
+package com.szone.domain.service;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import com.szone.domain.dao.MapDao;
+import com.szone.domain.dto.Szone;
+
+
+@Service
+public class SzoneService {
+	
+	@Autowired
+	private MapDao mapDao;
+	
+	public List<Szone> selectTempList() {
+		List<Szone> map = new ArrayList<Szone>();
+		map = mapDao.selectTempList();
+		return map;
+	}
+	//List<Szone> selectTempList();
+
+	public List<Map<String, Object>> selectGeom() {
+		List<String> map = new ArrayList<>();
+		List<Map<String, Object>> geojson = mapDao.selectGeom();
+		//map = mapDao.selectGeom();
+		Object test1 = geojson.get(0).get("geojson");
+		Object test2 = geojson.get(0).toString();
+		List<Map<String, Object>> tmp = new ArrayList<Map<String, Object>>();
+		tmp.addAll(0, geojson);
+		System.out.println(">>>>>>>>>>>>>>>>>>"+test1);
+		System.out.println(">>>>>>>>>>>>>>>>>>"+test2);
+		return geojson;
+	}
+
+	public Map<String, List<String>> selectSzoneGeom() {
+		
+		//Map<String, String> result = new HashMap<>();
+		
+		Map<String, List<String>> resultSzoneAll = mapDao.selectSzoneAll();
+
+		return resultSzoneAll;
+	}
+}

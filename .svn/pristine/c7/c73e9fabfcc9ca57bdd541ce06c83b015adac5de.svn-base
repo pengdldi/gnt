@@ -1,0 +1,82 @@
+package com.szone.domain.dao;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import org.mybatis.spring.SqlSessionTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Repository;
+import com.szone.domain.dto.Device;
+import com.szone.domain.dto.Szone;
+
+@Repository
+public class MapDao {
+	@Autowired
+	private SqlSessionTemplate sqlSession;
+	
+	public List<Map<String,Object>> selectGeom() {
+		return sqlSession.selectList("mapDao.selectGeom");
+	}
+
+	public Map<String, List<String>> selectSzoneAll() {
+		Map<String, List<String>> results = new HashMap<>();
+		//List<String> results = sqlSession.selectList("mapDao.selectSzoneAll");
+		
+		List<String> szoneUnit = sqlSession.selectList("mapDao.selectSzoneUnit");
+		results.put("szoneUnit", szoneUnit);
+		List<String> lane = sqlSession.selectList("mapDao.selectLane");
+		results.put("lane", lane);
+		
+		for (int i = 1; i <= 8; i++) {
+			int param = i;
+			List<String> szone = sqlSession.selectList("mapDao.selectSzone", param);
+			results.put("szone"+i, szone);
+		}
+
+		return results;
+	}
+
+	/* public List<Szone> szoneUnitInfo(Szone szone) {
+			return sqlSession.selectList("mapDao.szoneUnitInfo", szone);
+	} */
+
+	public List<Szone> szoneEachInfo(Szone szone) {
+		return sqlSession.selectList("mapDao.szoneEachInfo", szone);
+	}
+
+	public Map<String, List<Szone>> szoneUnitInfo(Szone szone) {
+		Map<String, List<Szone>> results = new HashMap<>();
+		
+		List<Szone> szoneUnitInfo = sqlSession.selectList("mapDao.szoneUnitInfo", szone);
+		List<Szone> cctv = sqlSession.selectList("mapDao.cctv", szone);
+		//List<Szone> lidar = sqlSession.selectList("mapDao.lidar", szone);
+		List<Szone> vds = sqlSession.selectList("mapDao.vds", szone);
+		List<Szone> device_cnt = new ArrayList<Szone>();
+		Szone dcnt = new Szone();
+		dcnt.setDevice_cnt(cctv.size()+vds.size());
+		device_cnt.add(dcnt);
+		
+		results.put("szoneInfo", szoneUnitInfo);
+		results.put("cctv", cctv);
+		results.put("vds", vds);
+		results.put("device_cnt", device_cnt);
+		return results;
+	}
+
+	public Map<String, List<Device>> cctvInfo(Device cctv) {
+		Map<String, List<Device>> results = new HashMap<>();
+		
+		List<Device> cctvInfo = sqlSession.selectList("mapDao.cctv", cctv);
+		List<Device> cctvDetail = sqlSession.selectList("mapDao.cctvDetail", cctv);
+		//List<Szone> lidar = sqlSession.selectList("mapDao.lidar", szone);
+		List<Device> vdsInfo = sqlSession.selectList("mapDao.vds", cctv);
+		List<Device> vdsDetail = sqlSession.selectList("mapDao.vdsDetail", cctv);
+		
+		results.put("cctvInfo", cctvInfo);
+		results.put("cctvDetail", cctvDetail);
+		results.put("vdsInfo", vdsInfo);
+		results.put("vdsDetail", vdsDetail);
+		return results;
+	}
+}

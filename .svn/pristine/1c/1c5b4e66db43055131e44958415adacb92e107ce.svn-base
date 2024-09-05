@@ -1,0 +1,15 @@
+package com.szone.domain.dto;
+
+import lombok.Data;
+
+@Data
+public class TrafficInfo {
+	
+	private int id;
+	private String positionX;
+	private String positionY;
+	private String node_id;
+	private String cross_node_id;
+	private String rn;
+
+}

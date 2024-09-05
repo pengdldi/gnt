@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mapDao">
+	<resultMap id="geojsonResultMap" type="java.util.ArrayList">
+		<result property="item" column="geojson" javaType="java.lang.String"/>
+	</resultMap>
+
+	<select id="selectTempList" resultType="com.szone.domain.dto.Szone">
+		select
+			uuid,
+			link_id
+		from szone;
+	</select>
+
+	<select id="selectGeom" resultType="java.util.Map">
+		select ST_AsGeoJson(ST_LineMerge(geom)) as geojson from szone;
+	</select>
+	
+	<select id="selectSzoneUnit" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			moct_link_224 
+		where 
+			link_id in (select link_id from szone);
+	</select>
+	
+	<select id="selectLane" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			lane_link;
+	</select>
+	
+	<select id="selectSzone" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			szone
+		<where>
+			and lane_no = #{param}
+		</where>
+	</select>
+</mapper>

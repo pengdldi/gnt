@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="mapDao">
+	
+	<select id="selectSzoneUnit" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			moct_link_224 
+		where 
+			link_id in (select link_id from szone);
+	</select>
+	
+	<select id="selectLane" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			lane_link;
+	</select>
+	
+	<select id="selectSzone" resultType="java.lang.String">
+		select 
+			ST_AsGeoJson(ST_LineMerge(geom)) as geojson
+		from 
+			szone
+		<where>
+			and lane_no = #{param}
+		</where>
+	</select>
+	
+	<!-- <select id="szoneUnitInfo" resultType="map" parameterType="map">
+		select 
+			t1.link_id as link_id,
+			lane_no,
+			lane_no || '차로' as lane_note,
+			'유형' || slevel as slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+			end slevel_note,
+			t2.road_name as road_name
+		from 
+			szone_view t1
+		left join moct_link_224 t2
+		on
+			t1.link_id = t2.link_id
+		<where>
+			and t1.link_id = #{link_id}
+		</where>
+	</select> -->
+	<select id="szoneUnitInfo" resultType="map" parameterType="map">
+		select 
+			t1.link_id as link_id,
+			lane_no,
+			lane_no || '차로' as lane_note,
+			'유형' || slevel as slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note,
+			t2.road_name as road_name
+		from 
+			szone_view t1
+		left join moct_link_224 t2
+		on
+			t1.link_id = t2.link_id
+		<where>
+			and t1.link_id = #{link_id}
+		</where>
+	</select>
+	<select id="szoneEachInfo" resultType="map" parameterType="map">
+		select 
+			t1.link_id as link_id,
+			lane_no,
+			lane_no || '차로' as lane_note,
+			'유형' || slevel as slevel,
+			case
+				when slevel = 1 then '정보수집체계 부재'
+				when slevel = 2 then '미시교통정보 미수집'
+				when slevel = 3 then '센서고장'
+				when slevel = 4 then '외부환경(센서 오작동)'
+				when slevel = 5 then '표본 부족'
+				when slevel = 6 then '돌발상황(사고,공사 등)'
+				when slevel = 7 then '정상'
+			end slevel_note,
+			t2.road_name as road_name
+		from 
+			szone_view t1
+		left join moct_link_224 t2
+		on
+			t1.link_id = t2.link_id
+		<where>
+			and t1.link_id = #{link_id}
+			and t1.lane_no = #{lane_no}
+		</where>
+	</select>
+	
+	<select id="cctv" resultType="map" parameterType="map">
+		select linkid, ctv_id
+		from 
+		(
+			select
+				linkid,
+				ctv_id,
+				t2.lane_no lane_no,
+				t2.slevel slevel
+			from
+				cctv_info t1
+			left join 
+				szone_view t2
+			on t1.linkid = t2.link_id
+			<where>
+				and linkid = #{link_id}
+				and lane_no is not null
+			</where>
+			order by linkid, lane_no ) t3
+		group by linkid, ctv_id
+	</select>
+	<select id="vds" resultType="map" parameterType="map">
+		select link_id, vds_id
+		from 
+		(
+			select
+				t1.link_id,
+				vds_id,
+				t2.lane_no lane_no,
+				t2.slevel slevel
+			from
+				vdsl_info t1
+			left join 
+				szone_view t2
+			on t1.link_id = t2.link_id
+			<where>
+				and t1.link_id = #{link_id}
+				and lane_no is not null
+			</where>
+			order by link_id, lane_no ) t3
+		group by link_id, vds_id
+	</select>
+	
+	<select id="cctvDetail" resultType="map" parameterType="map">
+		with szone_cctv as 
+		(
+			select
+				t1.linkid,
+				t1.ctv_id,
+				t2.lane_no lane_no,
+				t2.slevel slevel
+			from
+				cctv_info t1
+			left join 
+				szone_view t2
+			on t1.linkid = t2.link_id
+			<where>
+				and t1.linkid = #{link_id}
+				and t2.lane_no is not null
+			</where>
+			order by t1.linkid, t2.lane_no
+		)
+		select 
+			t3.linkid link_id,
+			t3.ctv_id ctv_id,
+			t3.lane_no || '차로' lane_no,
+			t3.slevel slevel,
+			coalesce(text(t4.spd),'-') cctv_spd,
+			coalesce(text(t4.vol),'-') cctv_vol,
+			coalesce(text(t4.occ),'-') cctv_occ
+		from 
+			szone_cctv t3
+		left join
+		(
+			select linkid, ctv_id, spd, vol, occ, lane_no from 
+			(
+				select
+					row_number() over(partition by lane_no order by collect_date desc) as rown,
+					linkid,
+					ctv_id,
+					collect_date,
+					spd,
+					vol,
+					occ,
+					lane_no
+				from
+					cctv
+			) cctv
+			<where>
+				and rown = 1
+			</where>
+		) t4
+		on t3.linkid = t4.linkid
+		and t3.ctv_id = t4.ctv_id
+		and t3.lane_no = t4.lane_no
+	</select>
+	
+	<select id="vdsDetail" resultType="map" parameterType="map">
+		with szone_vds as 
+		(
+			select
+				t1.link_id,
+				vds_id,
+				t2.lane_no lane_no,
+				t2.slevel slevel
+			from
+				vdsl_info t1
+			left join 
+				szone_view t2
+			on t1.link_id = t2.link_id
+			<where>
+				and t1.link_id = #{link_id}
+				and t2.lane_no is not null
+			</where>
+			order by link_id, lane_no 
+		)
+		select 
+			t3.link_id link_id,
+			t3.vds_id vds_id,
+			t3.lane_no || '차로' lane_no,
+			t3.slevel slevel,
+			coalesce(text(t4.spd),'-') vds_spd,
+			coalesce(text(t4.vol),'-') vds_vol,
+			coalesce(text(t4.occ),'-') vds_occ
+		from 
+			szone_vds t3
+		left join
+		(
+			select link_id, vds_id, spd, vol, occ, lane_no from (
+				select
+					row_number() over(partition by lane_no order by collect_date desc) as rown,
+					link_id,
+					vds_id,
+					collect_date,
+					spd,
+					vol,
+					occ,
+					lane_no
+				from
+					vdsl
+			) vds
+			<where>
+				and rown = 1
+			</where>
+		) t4
+		on t3.link_id = t4.link_id
+		and t3.vds_id = t4.vds_id
+		and t3.lane_no = t4.lane_no
+	</select>
+
+</mapper>

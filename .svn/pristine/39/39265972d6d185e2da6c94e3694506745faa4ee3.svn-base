@@ -1,0 +1,28 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<!DOCTYPE html>
+<html>
+<head>
+
+</head>
+<body>
+<div id="popup" class="ol-popup" style="display:none; width:900px; height:900px;">
+
+</div>
+<div id="popup-detail" class="ol-popup detail" style="display:none; width:300px; height:200px;">
+	<table class="jw4 jw5">
+		<tr class="jw4">
+			<th class="jw1">ssss</th>
+		</tr>
+		<tr class="jw4">
+			<td class="jw1">aaaaaa</td>
+		</tr>
+	</table>
+</div>
+
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/common/common.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/map/crossTrafficMapFunc.js"></script>
+<script type="text/javascript" src="${pageContext.request.contextPath}/js/map/crossTrafficMapEvent.js"></script>
+</body>
+</html>
+

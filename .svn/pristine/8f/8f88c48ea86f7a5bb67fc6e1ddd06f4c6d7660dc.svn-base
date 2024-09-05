@@ -1,0 +1,36 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<%@ taglib prefix="decorator" uri="http://www.opensymphony.com/sitemesh/decorator" %>
+<%@ taglib prefix="page" uri="http://www.opensymphony.com/sitemesh/page" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<% response.setHeader("Access-Control-Allow-Origin","*"); %>
+
+
+<div class="top">
+	<div class="logo" id="logo">
+		<p><img src="${pageContext.request.contextPath}/img/logo.jpg" style="width:300px;height:64px;" alt="Koroad 도로교통공단 홈페이지 로고">
+		</p>
+	</div>
+</div>
+	<div class="container text-center">
+		<div class="row align-items-start">
+			<div class="col">
+				<button class="menu menubtn" onclick="func_menuClickevt(0)">교차로교통량</button>
+			</div>
+			<div class="col">
+				<button class="menu menubtn" onclick="func_menuClickevt(1)">대기행렬길이</button>
+			</div>
+			<div class="col">
+				<button class="menu menubtn" onclick="func_menuClickevt(2)">링크속도</button>
+			</div>
+			<div class="col">
+				<button class="menu menubtn" onclick="func_menuClickevt(3)">링크교통량</button>
+			</div>
+			<div class="col">
+				<button class="menu click-menubtn" onclick="func_menuClickevt(4)">음영구간</button>
+			</div>
+		</div>
+	</div>
+		
+	

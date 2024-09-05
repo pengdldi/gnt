@@ -1,0 +1,144 @@
+/**
+ * Version : 1.0 
+ * 파일명: mainMapFunc.js 
+ * 작성일자 : 2023-09-10
+ * 설명 : mainMap.jsp 작동함수 정의
+ */ 
+
+var map; //맵 변수 선언 : 지도 객체
+var mapLayer; //맵 레이어 선언 : 지도 그림(타일) 설정
+var mapOverlay; //맵 오버레이 선언 : 지도 위에 팝업 옵션을 사용할 때
+var mapView; //맵 뷰 선언 : 보여지는 지도 부분 설정
+var hover=null; //마우스 이벤트에 사용될 변수
+var basemap;
+let srsName5179 = 'EPSG:5179';
+let defaultzoom = 16;
+
+//URL배열 처리 선언된 상수로 직접 URL 가져옴 
+var arrUrlList = [
+	"/map/getSzoneList.do",		//0
+	"/admin/visual/modStateExcel.do"		//1
+];
+
+var arrDrawSzoneList = [
+	"szoneAll",//0
+	"lane",//1
+	"szone1", //2
+	"szone2", //3
+	"szone3",//4
+	"szone4",//5
+	"szone5",//6
+	"szone6"//7
+];
+
+/* 배경지도, moct_link_224 표출. 사라지지 않는 기본 레이어.*/
+function func_showBaseMap() {
+	//배경지도. 국토정보플랫폼
+	var backgroudLayer = new ol.layer.Tile(wmtEmapOption2('korean_map', true));
+	
+	var view = new ol.View({
+		projection: srsName5179,
+		center: [932305, 1928917], //변수로 담아오는 걸로 추후수정
+		zoom: defaultzoom,
+		minZoom: 12.8,
+		maxZoom: 25
+	});
+	
+	//moct_link_224레이어
+	var moctlinkLayer = new ol.layer.Tile({
+		visible: true,
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:moct_link_224'
+			}
+		})
+	});
+	
+	map = new ol.Map({
+		layers: [backgroudLayer,moctlinkLayer],
+		target: 'map1',
+		view: view
+	});
+}
+
+
+function func_ajaxSzonlist(URL_NUM) {
+	$.ajax({
+		url: func_createUrl(URL_NUM),
+		type: "POST",
+		async: false,
+		dataType: "json",
+		success: function (result) {		
+			func_drawSzoneLink(result);
+		},
+		error: function (request, status, error) {
+			console.log(status);
+			console.log("code:" + request.status + "\n" + "message:" + request.responseText + "\n" + "error:" + error);
+		}
+	});
+}
+
+function func_createUrl(URL_NUM){
+	const url = arrUrlList[URL_NUM];
+	return url;
+}
+
+function func_drawSzoneLink(result) {
+	
+
+	/*for (let i = 0; i < arrDrawSzoneList.length; i++) {
+		switch(i) {
+			case 0: {
+				var szoneUnit = result.szoneUnit;
+				let LineStringVector = new ol.source.Vector({}); // 벡터 선언
+				var geoJsonFormat = new ol.format.GeoJSON();
+				for(let i = 0; i < szoneUnit.length; i++){
+					var lineFeature = geoJsonFormat.readFeature(szoneUnit[i]);
+					lineFeature.setStyle(new ol.style.Style({
+						stroke : new ol.style.Stroke({
+							color : '#ff0020',
+							width : 5
+						})
+					}));
+					
+					LineStringVector.addFeature(lineFeature);
+				}
+				let lineListLayer = new ol.layer.Vector({
+					source : LineStringVector
+				});
+				//lineListLayer.setZIndex(9000);
+				lineListLayer.set('name', 'szoneUnitLayer');
+				map.addLayer(lineListLayer);
+				break;
+			}
+			case 1: {
+				var lane = result.lane;
+				let LineStringVector = new ol.source.Vector({}); // 벡터 선언
+				var geoJsonFormat = new ol.format.GeoJSON();
+				for(let i = 0; i < lane.length; i++){
+					var lineFeature = geoJsonFormat.readFeature(lane[i]);
+					lineFeature.setStyle(new ol.style.Style({
+						stroke : new ol.style.Stroke({
+							color : '#000000',
+							width : 10
+						})
+					}));
+					
+					LineStringVector.addFeature(lineFeature);
+				}
+				let lineListLayer = new ol.layer.Vector({
+					source : LineStringVector
+				});
+				//lineListLayer.setZIndex(9000);
+				lineListLayer.set('name', 'laneLayer');
+				map.addLayer(lineListLayer);
+				break;
+			}
+		}
+	}*/
+	
+}

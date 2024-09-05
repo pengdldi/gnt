@@ -1,0 +1,21 @@
+/**
+ * Version : 1.0 
+ * 파일명: spdMapEvent.js 
+ * 작성일자 : 2023-10-06
+ * 설명 : linkSpdMap.jsp 작동이벤트 정의
+ */ 
+document.addEventListener("DOMContentLoaded",function(){
+	func_showBaseMap();
+	func_showWaitingLineMap();
+});
+
+document.getElementById('map').addEventListener('click',(evt) =>{
+	//func_resetPopup(evt);
+	//func_mapClickEvt(evt, WATING_LINE_PAGE);
+});
+
+
+document.getElementById('map').addEventListener('pointermove',(evt) =>{
+	//document.getElementById("popup").style.display = 'none';
+	func_waitingLineMouseOver(evt);
+});

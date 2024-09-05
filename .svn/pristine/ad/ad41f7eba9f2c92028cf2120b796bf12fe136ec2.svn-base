@@ -1,0 +1,420 @@
+/**
+ * Version : 1.0 
+ * 파일명: mainMapFunc.js 
+ * 작성일자 : 2023-09-10
+ * 설명 : mainMap.jsp 작동함수 정의
+ */ 
+
+
+var map;
+let mapView; //맵 뷰 선언 : 보여지는 지도 부분 설정
+let szoneUnitLayer;
+let szoneAllLayer;
+let coordinate;
+let overlay;
+const srsName5179 = 'EPSG:5179';
+const defaultzoom = 14;
+
+let link_id;
+let lane_no = '0';
+//URL배열 처리 선언된 상수로 직접 URL 가져옴 
+const arrUrlList = [
+	"/map/getSzoneUnitInfo.do",		//0
+	"/map/getSzoneEachInfo.do",		//1
+	"/map/getDeviceInfo.do",		//2
+];
+const URL_GET_SZONE_UNIT_INFO = 0;
+const URL_GET_SZONE_EACH_INFO = 1;
+const URL_GET_DEVICE_INFO = 2;
+const GET_CCTV_INFO = 3;
+const GET_VDS_INFO = 4;
+
+let cctvDetail;
+let vdsDetail;
+
+let popupNode = document.getElementById("popup");
+let roadname = popupNode.querySelector("#road_name");
+let laneno = popupNode.querySelector("#lane_no");
+let slevel = popupNode.querySelector("#slevel");
+let note = popupNode.querySelector("#note");
+
+let detailNode = document.getElementById("detail");
+let detailRoad = detailNode.querySelector("#road_name");
+let detailDName = detailNode.querySelector("#device_name");
+let detailDevice = detailNode.querySelector("#device");
+let detailDeviceID = detailNode.querySelector("#device_id");
+
+let detailCliedId = detailNode.querySelector("#clicked_id");
+let detailLaneno = detailNode.querySelector("#lane_no");
+let detailSlevel = detailNode.querySelector("#slevel");
+let detailSpd = detailNode.querySelector("#spd");
+let detailVol = detailNode.querySelector("#vol");
+let detailOcc = detailNode.querySelector("#occ");
+
+/* 배경지도, moct_link_224 표출. 사라지지 않는 기본 레이어.*/
+function func_showBaseMap() {
+	//배경지도. 국토정보플랫폼
+	let backgroudLayer = new ol.layer.Tile(wmtEmapOption2('korean_map', true));
+	
+	//moct_link_224레이어
+	let moctlinkLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'moct_link_224',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:moct_link_224'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	szoneUnitLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'szone_unit',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:szone_unit'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	let laneLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'lane_link',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:lane_link'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	szoneAllLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'szone_view',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:szone_view'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	mapView = new ol.View({
+		projection: srsName5179,
+		center: [932305, 1928917], //변수로 담아오는 걸로 추후수정
+		zoom: defaultzoom,
+		maxZoom: 19.5,
+		minZoom: 13 //12.8
+	});
+	
+	map = new ol.Map({
+		layers: [backgroudLayer,moctlinkLayer,szoneUnitLayer,laneLayer,szoneAllLayer],
+		target: 'map1',
+		view: mapView
+	});
+
+}
+
+function func_mapClickEvt(evt) {
+	map.on('singleclick', function(evt) {
+		var gubun;
+		let zoom = mapView.getZoom();
+		let urlLayer;
+		coordinate = evt.coordinate;
+		if(zoom < 17.5) {
+			urlLayer = szoneUnitLayer;
+			gubun = URL_GET_SZONE_UNIT_INFO;
+		} else {
+			urlLayer = szoneAllLayer;
+			gubun = URL_GET_SZONE_EACH_INFO;
+		}
+
+		const viewResolution = mapView.getResolution();
+		const url = urlLayer.getSource().getFeatureInfoUrl(
+			coordinate,
+			viewResolution,
+			srsName5179,
+			{'INFO_FORMAT' : 'application/json'}
+		);
+		if(url) {
+			fetch(url).then(response => response.json()).then((result) => {
+				const tmp = JSON.parse(JSON.stringify(result));
+
+				if (tmp.features[0] === undefined) {
+				} else {
+					const properties = tmp.features[0].properties;
+					if (properties.lane_no === undefined) {
+						link_id = properties.link_id;
+					} else {
+						link_id = properties.link_id;
+						lane_no = properties.lane_no;
+					}
+					func_ajaxGetInfo(gubun);
+				}
+				
+			});
+			evt.preventDefault();
+		}
+	});
+}
+
+function func_ajaxGetInfo(URL_NUM) {
+	$.ajax({
+		url: func_createUrl(URL_NUM),
+		type: "POST",
+		async: false,
+		contentType: "application/json",
+		dataType: "json",
+		data : func_createParmater(URL_NUM),
+		success: function (result) {
+			func_resultDataParser(result, URL_NUM)
+			//func_szonePopup(result, URL_NUM);
+		},
+		error: function (request, status, error) {
+			console.log(status);
+			console.log("code:" + request.status + "\n" + "message:" + request.responseText + "\n" + "error:" + error);
+		}
+	});
+}
+
+function func_createUrl(URL_NUM){
+	const url = arrUrlList[URL_NUM];
+	return url;
+}
+
+function func_createParmater(URL_NUM){
+	var obj = {};
+	
+	switch (URL_NUM){
+		case URL_GET_SZONE_UNIT_INFO: {
+			obj = {
+				'link_id' : link_id
+			};
+			break;
+		}
+		case URL_GET_SZONE_EACH_INFO: {
+			obj = {
+				'link_id' : link_id,
+				'lane_no' : lane_no
+			};
+			break;
+		}
+		case URL_GET_DEVICE_INFO: {
+			obj = {
+				'link_id' : link_id,
+				'lane_no' : lane_no
+			};
+			break;
+		}
+	}
+	return JSON.stringify(obj);
+}
+
+function func_resultDataParser(result, URL_NUM) {
+	switch (URL_NUM) {
+		case URL_GET_SZONE_UNIT_INFO: {
+			drawPopup(result);
+			break;
+		}
+		case URL_GET_SZONE_EACH_INFO: {
+			drawPopup(result);
+			break;
+		}
+		case URL_GET_DEVICE_INFO: {
+			drawPopupDetail(result);
+			break;
+		}
+	}
+}
+
+function drawPopup(result) {
+	const szoneList = result.szoneInfo;
+	const device_cnt = result.device_cnt[0].device_cnt;
+	/* 음영구간 유형 조회 */
+	//도로명 넣기
+	roadname.textContent = szoneList[0].road_name;
+	//차로, 음영구간 유형, 음영구간 내용 넣기
+	let lanenoTh = '';
+	let slevelTd = '';
+	let noteTd = '';
+	for (let i=0; i<szoneList.length; i++){
+		lanenoTh += '<th class="reset-del">'+szoneList[i].lane_note+'</th>';
+		slevelTd += '<td class="reset-del">'+szoneList[i].slevel+'</td>';
+		noteTd += '<td class="reset-del">'+szoneList[i].slevel_note+'</td>';
+	}
+	
+	laneno.insertAdjacentHTML('afterend',lanenoTh);
+	slevel.insertAdjacentHTML('afterend',slevelTd);
+	note.insertAdjacentHTML('afterend',noteTd);
+	popupNode.style.display = 'block';
+	
+	
+	overlay = new ol.Overlay({
+		element: popupNode,
+		autoPan: {
+			animation: {
+				duration: 400,
+			},
+		},
+	})
+	
+	overlay.setPosition(coordinate);
+	//popups.push(overlay);	
+	map.addOverlay(overlay);
+	
+	/* 차로, 장치별 상세보기 조회 */
+	if (device_cnt == '0') { //해당 도로, 차로에 장치가 하나도 없으면 [상세보기] 버튼 안 보임
+		popupNode.querySelector("#popup-detail-button").style.display = 'none';
+	} else {
+		popupNode.querySelector("#popup-detail-button").style.display = '';
+	}
+}
+
+function drawPopupDetail(result) {
+	detailRoad.textContent = "구간: "+roadname.textContent;
+	
+	let cctv = result.cctvInfo;
+	let vds = result.vdsInfo;
+	cctvDetail = result.cctvDetail;
+	vdsDetail = result.vdsDetail;
+	
+	let dname = '';
+	let deviceTh = '';
+	let deviceIdTd = ''
+	if (cctv.length > 0) {
+		dname += 'cctv ';
+		deviceTh += '<th class="reset-del">CCTV</th>';
+		for (let i=0; i<cctv.length; i++) {
+			deviceIdTd += '<td id="'+cctv[i].ctv_id+'" class="reset-del">';
+			deviceIdTd += '<button type="button" class="btn btn-outline-success" onclick="func_showDeviceInfo(3,\'';
+			deviceIdTd += cctv[i].ctv_id+'\')">';
+			deviceIdTd += cctv[i].ctv_id;
+			deviceIdTd += '</button>';
+		}
+		deviceIdTd += '</td>';
+	}
+	if (vds.length > 0) {
+		dname += 'vds ';
+		deviceTh += '<th class="reset-del">VDS</th>';
+		for (let i=0; i<vds.length; i++) {
+			deviceIdTd += '<td id="'+vds[i].vds_id+'" class="reset-del">';
+			deviceIdTd += '<button type="button" class="btn btn-outline-success" onclick="func_showDeviceInfo(4,\'';
+			deviceIdTd += vds[i].vds_id+'\')">';
+			deviceIdTd += vds[i].vds_id;
+			deviceIdTd += '</button>';
+		}
+		deviceIdTd += '</td>';
+	}
+	detailDName.textContent = "수집장치: "+dname;
+	detailDevice.insertAdjacentHTML('afterend',deviceTh);
+	detailDeviceID.insertAdjacentHTML('afterend',deviceIdTd);
+	detailNode.style.display = 'block';
+}
+
+function func_showDeviceInfo(num, deviceId) {
+	detailCliedId.textContent = '장치ID : '+deviceId;
+	
+	let detailLaneTd = '';
+	let detailSlevelTd = '';
+	let detailSpdTd = '';
+	let detailVolTd = '';
+	let detailOccTd = '';
+	switch(num) {
+		case GET_CCTV_INFO : {
+			//차로
+			for (var i=0; i<cctvDetail.length; i++) {
+				if (cctvDetail[i].ctv_id == deviceId) {
+					detailLaneTd += '<td class="reset-del">'+cctvDetail[i].lane_no+'</td>';
+					detailSlevelTd += '<td class="reset-del"> '+cctvDetail[i].slevel+'</td>';
+					detailSpdTd += '<td class="reset-del">'+cctvDetail[i].cctv_spd+'</td>';
+					detailVolTd += '<td class="reset-del">'+cctvDetail[i].cctv_vol+'</td>';
+					detailOccTd += '<td class="reset-del">'+cctvDetail[i].cctv_occ+'</td>';
+				}
+			}
+			break;
+		}
+		case GET_VDS_INFO : {
+			for (var i=0; i<vdsDetail.length; i++) {
+				if (vdsDetail[i].ctv_id == deviceId) {
+					detailLaneTd += '<td class="reset-del">'+vdsDetail[i].lane_no+'</td>';
+					detailSlevelTd += '<td class="reset-del">'+vdsDetail[i].slevel+'</td>';
+					detailSpdTd += '<td class="reset-del">'+vdsDetail[i].vds_spd+'</td>';
+					detailVolTd += '<td class="reset-del">'+vdsDetail[i].vds_vol+'</td>';
+					detailOccTd += '<td class="reset-del">'+vdsDetail[i].vds_occ+'</td>';
+				}
+			}
+			break;
+		}
+	}
+	detailLaneno.insertAdjacentHTML('afterend',detailLaneTd);
+	detailSlevel.insertAdjacentHTML('afterend',detailSlevelTd);
+	detailSpd.insertAdjacentHTML('afterend',detailSpdTd);
+	detailVol.insertAdjacentHTML('afterend',detailVolTd);
+	detailOcc.insertAdjacentHTML('afterend',detailOccTd);
+}
+
+function func_removePopup(evt) {
+	
+/*	roadname.innerText = '';
+	detailRoad.innerText = '';
+	detailCliedId.innerText = '';
+	detailDName.innerText = '';
+	
+	let nextLane = laneno.nextElementSibling;
+	let nextLevel = slevel.nextElementSibling;
+	let nextNote = note.nextElementSibling;
+	
+	let nextDetailDevice = detailDevice.nextElementSibling;
+	let nextDetailDeviceId =  detailDeviceID.nextElementSibling;
+	
+	while(nextLane) {
+		nextLane.innerText = '';
+		nextLane = nextLane.nextElementSibling;
+	}
+	while(nextLevel) {
+		nextLevel.innerText = '';
+		nextLevel = nextLevel.nextElementSibling;
+	}
+	while(nextNote) {
+		nextNote.innerText = '';
+		nextNote = nextNote.nextElementSibling;
+	}*/
+	
+	
+	if (overlay === undefined) {}
+	else {
+		
+		if (evt.target.id != 'popup-detail-button') {
+			let resetList = document.querySelectorAll('.reset');
+			let resetDelList = document.querySelectorAll('.reset-del');
+			for(var i=0; i<resetList.length; i++) {
+				resetList[i].innserText = '';
+			}
+			for(var i=0; i<resetDelList.length; i++) {
+				resetDelList[i].remove();
+			}
+			overlay.setPosition(undefined);
+			document.getElementById('popup-closer').blur();
+			document.getElementById('detail-closer').blur();
+			return false;
+		}
+	}
+}

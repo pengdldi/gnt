@@ -1,0 +1,188 @@
+/**
+ * Version : 1.0 
+ * 파일명: mainMapFunc.js 
+ * 작성일자 : 2023-09-10
+ * 설명 : mainbaseMap.jsp 작동함수 정의
+ */
+
+let nodeLayer;
+
+let lane_no;
+let node_id;
+let coordinate;
+
+let roadname = popupNode.querySelector("#road_name");
+let laneno = popupNode.querySelector("#lane_no");
+let slevel = popupNode.querySelector("#slevel");
+let note = popupNode.querySelector("#note");
+let spd = popupNode.querySelector("#spd");
+let tmslnote = popupNode.querySelector("#tmsl_note");
+
+const srsName5179 = 'EPSG:5179';
+const defaultzoom = 14;
+
+let traffic_map
+
+function func_showTrafficMap() {
+	//교차로 노드
+	nodeLayer = new ol.layer.Tile({
+		visible: true,
+		name : 'smtl_node',
+		source: new ol.source.TileWMS({
+			url: 'http://192.168.1.159:8088/geoserver/szone/wms',
+			params: {
+				'FORMAT': 'image/png', 
+				'VERSION': '1.1.0',
+				tiled: true,
+				"LAYERS": 'szone:smtl_node'
+			},
+			crossOrigin: 'anonymous'
+		})
+	});
+	
+	mapView = new ol.View({
+		projection: srsName5179,
+		center: [centerX, centerY], //변수로 담아오는 걸로 추후수정
+		zoom: defaultzoom,
+		maxZoom: 19.5,
+		minZoom: 13 //12.8
+	});
+	
+	baseMap = new ol.Map({
+		layers: [backgroudLayer,nodeLayer],
+		target: 'map',
+		view: mapView
+	});
+}
+
+function func_CrossTrafficMapClickEvt(evt) {
+	baseMap.on('singleclick', function(evt) {
+		
+		coordinate = evt.coordinate;
+		const viewResolution = mapView.getResolution();
+		const url = nodeLayer.getSource().getFeatureInfoUrl(
+			coordinate,
+			viewResolution,
+			srsName5179,
+			{'INFO_FORMAT' : 'application/json'}
+		);
+		if(url) {
+			fetch(url).then(response => response.json()).then((result) => {
+				const tmp = JSON.parse(JSON.stringify(result));
+
+				if (tmp.features[0] === undefined) {
+				} else {
+					const properties = tmp.features[0].properties;
+					if (properties.node_id === undefined) {
+					} else {
+						node_id = properties.node_id;
+						func_ajaxGetInfo(URL_CROSS_TRAFFIC_INFO);
+					}
+				}
+			});
+			evt.preventDefault();
+		}
+	});
+}
+
+function func_ajaxGetInfo(URL_NUM) {
+		$.ajax({
+		url: func_createUrl(URL_NUM),
+		type: "POST",
+		async: false,
+		contentType: "application/json",
+		dataType: "json",
+		data : func_createParmater(URL_NUM),
+		success: function (result) {
+			func_resultDataParser(result, URL_NUM);
+		},
+		error: function (request, status, error) {
+			console.log(status);
+			console.log("code:" + request.status + "\n" + "message:" + request.responseText + "\n" + "error:" + error);
+		}
+	});
+}
+
+function func_createUrl(URL_NUM){
+	const url = arrUrlList[URL_NUM];
+	return url;
+}
+
+function func_createParmater(URL_NUM){
+	var obj = {};
+	
+	obj = {
+		'node_id' : node_id,
+	};
+	return JSON.stringify(obj);
+}
+
+function func_resultDataParser(result, URL_NUM) {
+	removeOverlay();
+	const trafficInfo = result.trafficInfo;
+	
+	let overlay = new ol.Overlay({
+		element: popupNode,
+		autoPan: {
+			animation: {
+				duration: 400,
+			},
+		},
+	})
+	popupNode.style.display = 'block';
+	
+	overlay.setPosition(coordinate);
+	baseMap.addOverlay(overlay);
+
+	//위성지도 위
+	traffic_map = new ngii_wmts.map("popup",{
+		mapMode:9,
+		projection: srsName5179,
+		center: [coordinate[0], coordinate[1]],
+		zoom: defaultzoom,
+		maxZoom: 19.5,
+		minZoom: 13,
+	});
+
+	let infoPopup = document.getElementById("popup-detail");
+	
+	for (let i=0; i<trafficInfo.length; i++) {
+		let newNode = infoPopup.cloneNode(true);
+		newNode.id = trafficInfo[i].cross_node_id;
+		newNode.style.display = 'block';
+		infoPopup.after(newNode);
+		
+		let positionX = trafficInfo[i].positionx;
+		let positionY = trafficInfo[i].positiony;
+		
+		let traffic_overlay = new ol.Overlay({
+			position: [positionX, positionY],
+			element: newNode,
+			autoPan: {
+				animation: {
+					duration: 400,
+				},
+			},
+		});
+		setTimeout(() => traffic_map._getMap().addOverlay(traffic_overlay), 50);
+	} 
+}
+
+function removeOverlay() {
+	overlayCnt1 = baseMap.getOverlays().array_.length;
+
+	if(overlayCnt1 > 0){
+		let basemap_oberlays = baseMap.getOverlays().getArray();
+		let infomap_oberlays = traffic_map._getMap().getOverlays().getArray();
+		
+		basemap_oberlays.forEach(function(overlay) {
+			baseMap.removeOverlay(overlay);
+		});
+		infomap_oberlays.forEach(function(overlay) {
+			 traffic_map._getMap().removeOverlay(overlay);
+		});
+		
+		popupNode.innerHTML = '';
+	}
+}
+

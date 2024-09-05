@@ -1,0 +1,14 @@
+/**
+ * Version : 1.0 
+ * 파일명: mainMapEvent.js 
+ * 작성일자 : 2023-09-10
+ * 설명 : mainMap.jsp 작동이벤트 정의
+ */ 
+document.addEventListener("DOMContentLoaded",function(){
+	
+	func_showBaseMap();
+	//console.log(map.getView().getZoom());
+	//setInterval 로 5분마다 음영구간 그려오도록 함.
+	func_ajaxSzonlist(0);
+
+});

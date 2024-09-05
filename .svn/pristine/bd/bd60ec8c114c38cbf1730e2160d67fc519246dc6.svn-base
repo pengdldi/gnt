@@ -1,0 +1,48 @@
+.jw1 {
+	background-color: #000080;
+	color: white;
+	width: 86px;
+	text-align: center;
+}
+
+.jw2 {
+	margin-bottom: 14px;
+	position: absolute;
+	margin-top: -15px;
+	margin-left: -16px;
+	width: 274px;
+	color: white;
+	background-color: #000080;
+}
+
+.jw3 {
+	padding-left:47px;
+}
+.jw4 {
+	border: 1px solid grey;
+	text-align: center;
+	margin-top: 30px;
+}
+
+.jw5 {
+	width: -webkit-fill-available;
+}
+
+.jw6 {
+	border: 4px solid #000080;
+}
+.jw7 {
+	border: 1px solid grey;
+	text-align: center;
+	margin-top: 64px;
+}
+
+.jw8 {
+	margin-bottom: 14px;
+    position: absolute;
+    margin-top: -29px;
+    margin-left: -2px;
+    width: 495px;
+    color: white;
+    background-color: #000080;
+}

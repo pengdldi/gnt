@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<decorators defaultdir="/WEB-INF/views/layout">
+	<!-- top 레이아웃 -->
+	<decorator name="top" page="top.jsp"/>
+	<decorator name="footer" page="footer.jsp"/>
+	
+    <!-- 메인 레이아웃 -->
+	<decorator name="default_layout" page="defaultLayout.jsp">
+		<pattern>/map/*</pattern>
+		<pattern>/map/</pattern>
+		<pattern>/*</pattern>
+	</decorator>
+	
+</decorators>

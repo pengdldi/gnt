@@ -1,0 +1,38 @@
+.menubtn {
+	border: 1px solid green;
+	border-radius: 80px 80px 80px 80px;
+	width: 100%;
+	background-color: white;
+}
+
+.click-menubtn {
+	border: 1px solid green;
+	border-radius: 80px 80px 80px 80px;
+	width: 100%;
+	background-color: green;
+	color: white;
+}
+
+.top {
+	text-align: center;
+	padding-top: 15px;
+	padding-bottom: 25px;
+}
+
+
+.progress-parent {
+	display: flex;
+	text-align: center;
+}
+ 
+.progress-child {
+	flex : 1;
+}
+
+.progress-start {
+	position:absolute;
+}
+
+.progress {
+	height: 31px;
+}

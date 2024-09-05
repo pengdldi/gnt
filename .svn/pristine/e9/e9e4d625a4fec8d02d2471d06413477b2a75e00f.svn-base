@@ -1,0 +1,22 @@
+package com.szone.domain.dto;
+
+import lombok.Data;
+
+@Data
+public class Szone {
+	
+	private int id;
+	private String link_id;
+	private String geom;
+	private int lane_no;
+	private String lane_note;
+	private int slevel;
+	private String slevel_note;
+	private String road_name;
+	private int device_cnt;
+	
+	private String cctv_spd;
+	private String cctv_vol;
+	private String cctv_occ;
+	
+}

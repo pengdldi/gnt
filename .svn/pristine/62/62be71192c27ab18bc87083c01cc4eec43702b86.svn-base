@@ -1,0 +1,169 @@
+package com.szone.domain.web;
+
+import java.time.LocalTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import com.szone.domain.service.szoneService;
+import com.szone.domain.service.smtlService;
+import com.szone.domain.dto.Device;
+import com.szone.domain.dto.SmtlSpd;
+import com.szone.domain.dto.Szone;
+import com.szone.domain.dto.TrafficInfo;
+
+
+
+/**
+@Version 1.0
+@author jwchoi
+@created 2023-08-25
+@class_desc 지도 컨트롤러
+@field_des 지도 컨트롤러
+*/
+@Controller
+@RequestMapping("")
+public class mapController { 
+	
+	//private final szoneService szoneService;
+	//private final smtlService smtlService;
+	
+	@Resource(name = "szoneService")
+	private szoneService szoneService;
+	@Resource(name = "smtlService")
+	private smtlService smtlService;
+	
+	@RequestMapping("")
+	public String intro(HttpServletRequest req, HttpServletResponse res) {
+		return "redirect:/crossTrafficInfoPage.do";
+	}
+	
+	//교차로교통량 메뉴
+	@RequestMapping("/crossTrafficInfoPage.do")
+	public String crossTrafficInfoPage(HttpServletRequest req, HttpServletResponse res, ModelMap model) {
+		model.addAttribute("pageNum", 0);
+		LocalTime currentTime = LocalTime.now();
+		int hour = currentTime.getHour();
+		model.addAttribute("hour", hour);
+		return "/map/crossTrafficMap";
+	}
+	
+	//교차로교통량 조회
+	@RequestMapping("/getTrafficInfo.do")
+	public ResponseEntity<Map<String, List<TrafficInfo>>> getTrafficInfo(HttpServletRequest req, HttpServletResponse res, @RequestBody TrafficInfo traffic) {
+		Map<String, List<TrafficInfo>> trafficInfo = new HashMap<>();
+		trafficInfo = smtlService.trafficInfo(traffic);
+		return new ResponseEntity<>(trafficInfo, HttpStatus.OK);
+	}
+	
+	//교차로교통량 노드생성 함수 실행
+	@Scheduled(cron = "0 0 * * * *")
+	@RequestMapping("/getSzoneRoad.do")
+	public void getSzoneRoad(HttpServletRequest req, HttpServletResponse res, @RequestBody TrafficInfo traffic) {
+		smtlService.insertSzoneRoad(traffic);
+	}
+	
+	//대기행렬 메뉴
+	@RequestMapping("/waitingLinePage.do")
+	public String waitingLinePage(HttpServletRequest req, HttpServletResponse res, ModelMap model) {
+		model.addAttribute("pageNum", 1);
+		LocalTime currentTime = LocalTime.now();
+		int hour = currentTime.getHour();
+		model.addAttribute("hour", hour);
+		return "/map/waitingLineMap";
+	}
+	
+	//szone_each 시간별 만들기
+	//교차로교통량 노드생성 함수 실행
+	@Scheduled(cron = "0 0 * * * *")
+	@RequestMapping("/getCrossNodeInfo.do")
+	public void getCrossNodeInfo(HttpServletRequest req, HttpServletResponse res, @RequestBody TrafficInfo traffic) {
+		smtlService.insertCrossNode(traffic);
+	}
+	
+	@Scheduled(cron = "0 0 * * * *")
+	@RequestMapping("/insertWaitingLine.do")
+	public void insertWaitingLine(HttpServletRequest req, HttpServletResponse res, @RequestBody TrafficInfo traffic) {
+		smtlService.insertWaitingLine(traffic);
+	}
+	
+	//링크-속도 메뉴
+	@RequestMapping("/linkSpdPage.do")
+	public String linkSpdPage(HttpServletRequest req, HttpServletResponse res, ModelMap model) {
+		model.addAttribute("pageNum", 2);
+		LocalTime currentTime = LocalTime.now();
+		int hour = currentTime.getHour();
+		model.addAttribute("hour", hour);
+		return "/map/linkSpdMap";
+	}
+	
+	//링크-속도 조회
+	@RequestMapping(value="/getLinkSpdInfo.do", method = RequestMethod.POST, produces = "application/json")
+	public ResponseEntity<Map<String, List<SmtlSpd>>> getLinkSpdInfo(HttpServletRequest req, HttpServletResponse res, @RequestBody SmtlSpd spd) {
+		Map<String, List<SmtlSpd>> linkSpdInfo = new HashMap<>();
+		linkSpdInfo = smtlService.linkSpdInfo(spd);
+		return new ResponseEntity<>(linkSpdInfo, HttpStatus.OK);
+	}
+	
+	//링크-교통량 메뉴
+	@RequestMapping("/linkVolPage.do")
+	public String linkVolPage(HttpServletRequest req, HttpServletResponse res, ModelMap model) {
+		model.addAttribute("pageNum", 3);
+		LocalTime currentTime = LocalTime.now();
+		int hour = currentTime.getHour();
+		model.addAttribute("hour", hour);
+		return "/map/linkVolMap";
+	}
+	
+	//링크-교통량 조회
+	@RequestMapping(value="/getLinkVolInfo.do", method = RequestMethod.POST, produces = "application/json")
+	public  ResponseEntity<Map<String, List<SmtlSpd>>> getLinkVolInfo(HttpServletRequest req, HttpServletResponse res, @RequestBody SmtlSpd vol) {
+		Map<String, List<SmtlSpd>> linkVolInfo = new HashMap<>();
+		linkVolInfo = smtlService.linkVolInfo(vol);
+		return new ResponseEntity<>(linkVolInfo, HttpStatus.OK);
+	}
+	
+	//음영구간 메뉴
+	@RequestMapping("/szonePage.do")
+	public String szonePage(HttpServletRequest req, HttpServletResponse res, ModelMap model) {
+		model.addAttribute("pageNum", 4);
+		LocalTime currentTime = LocalTime.now();
+		int hour = currentTime.getHour();
+		model.addAttribute("hour", hour);
+		return "/map/szoneMap";
+	}
+	
+	//음영구간 유형 조회(통합)
+	@RequestMapping(value="/getSzoneUnitInfo.do", method = RequestMethod.POST, produces = "application/json")
+	public ResponseEntity<Map<String, List<Szone>>> getSzoneUnitInfo(HttpServletRequest req, HttpServletResponse res, @RequestBody Szone szone) {
+		Map<String, List<Szone>> szoneUnitInfo = new HashMap<>();
+		szoneUnitInfo = szoneService.szoneUnitInfo(szone);
+		return new ResponseEntity<>(szoneUnitInfo, HttpStatus.OK);
+	}
+	
+	//음영구간 유형 조회(개별 차로)
+	@RequestMapping(value="/getSzoneEachInfo.do", method = RequestMethod.POST, produces = "application/json")
+	public ResponseEntity<Map<String, List<Szone>>> getSzoneEachInfo(HttpServletRequest req, HttpServletResponse res, @RequestBody Szone szone) {
+		Map<String, List<Szone>> szoneEachInfo = new HashMap<>();
+		szoneEachInfo = szoneService.szoneEachInfo(szone);
+		return new ResponseEntity<>(szoneEachInfo, HttpStatus.OK);
+	}
+	
+	//음영구간 유형 조회(상세보기)
+	@RequestMapping(value="/getDeviceInfo.do", method = RequestMethod.POST, produces = "application/json")
+	public ResponseEntity<Map<String, List<Device>>> getDeviceInfo(HttpServletRequest req, HttpServletResponse res, @RequestBody Device device) {
+		Map<String, List<Device>> DeviceInfo = szoneService.deviceInfo(device);
+		return new ResponseEntity<>(DeviceInfo, HttpStatus.OK);
+	}
+	
+}

@@ -1,0 +1,78 @@
+/**
+ * Version : 1.0 
+ * 파일명: menuFunc.js 
+ * 작성일자 : 2023-09-22
+ * 설명 : top.jsp 작동이벤트 정의
+ */ 
+
+let progress_stts = false; //true:반복중단, false:반복재개
+const bar = document.getElementById("progressbar"); //progress 변화
+let pageNum = document.getElementById("pageNum").value;
+//URL배열 처리 선언된 상수로 직접 URL 가져옴 
+const menuUrlList = [
+	"/crossTrafficInfoPage.do",		//0, 교차로교통량
+	"/waitingLinePage.do",		//1, 대기행렬길이
+	"/linkSpdPage.do",		//2, 링크속도
+	"/linkVolPage.do",		//3, 링크교통량
+	"/szonePage.do",		//4, 음영구간
+];
+
+function func_ajaxMoveMenu(URL_NUM) {
+	let menuUrl = func_createMenuUrl(URL_NUM);
+	$.ajax({
+		url: menuUrl,
+		type: "POST",
+		async: false,
+		success: function (result) {
+			location.replace(menuUrl);
+		},
+		error: function (request, status, error) {
+			console.log(status);
+			console.log("code:" + request.status + "\n" + "message:" + request.responseText + "\n" + "error:" + error);
+		}
+	});
+}
+
+function func_createMenuUrl(URL_NUM){
+	const url = menuUrlList[URL_NUM];
+	return url;
+}
+
+function func_changeMenuIcon() {
+	const menuElement = document.querySelectorAll(".menu");
+	
+	for (var i=0; i<menuElement.length; i++){
+		if (i == pageNum) {
+			menuElement[i].classList.add('menu_btn_on');
+			menuElement[i].classList.remove('menu_btn');
+		} else {
+			menuElement[i].classList.add('menu_btn');
+			menuElement[i].classList.remove('menu_btn_on');
+		}
+	}
+}
+
+function changeBarWidth() {
+	progress_stts = true;
+	console.log("changeBarWidth : "+bar.style.width)
+	let bar_width = bar.style.width;
+	bar_width = bar_width.replace("%","");
+	bar_width = Number(bar_width);
+	bar_width += 4;
+	
+	bar.style.width = bar_width + "%";
+}
+
+//let interval = setInterval(changeBarWidth, 3000);
+
+function func_changeProgress() {
+	var interval;
+	if (progress_stts) {
+		//반복중단
+		clearInterval(interval);
+		console.log("반복중단 클릭 : "+bar.style.width)
+		progress_stts = false;
+	} else {
+		interval = setInterval(changeBarWidth, 3000);
+	}
+}

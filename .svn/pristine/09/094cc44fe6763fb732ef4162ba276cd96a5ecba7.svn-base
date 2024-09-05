@@ -1,0 +1,184 @@
+/**
+ * Version : 1.0 
+ * 파일명: common.js 
+ * 작성일자 : 2023-10-06
+ * 설명 : 지도 jsp의 기본지도 표시
+ */
+
+let backgroudLayer;
+
+let baseMap;
+let mapView; //맵 뷰 선언 : 보여지는 지도 부분 설정
+
+const centerX = 932305;
+const centerY = 1928917;
+//페이지 변수
+const CROSS_TRAFFIC_PAGE = 0;
+const WATING_LINE_PAGE = 1;
+const LINK_SPD_PAGE = 2;
+const LINK_VOL_PAGE = 3;
+const SZONE_PAGE = 4;
+
+//팝업 조회 URL 변수
+const URL_CROSS_TRAFFIC_INFO = 0;
+const URL_WAITING_LINE_INFO = 1;
+const URL_GET_LINK_SPD_INFO = 2;
+const URL_GET_LINK_VOL_INFO = 3;
+const URL_GET_SZONE = 4;
+const URL_GET_SZONE_UNIT_INFO = 5;
+const URL_GET_SZONE_EACH_INFO = 6;
+const URL_GET_DEVICE_INFO = 7;
+
+//장치 데이터 변수
+const GET_SMTL_INFO = 8;
+const GET_VDS_INFO = 9;
+const GET_CCTV_INFO = 10;
+const GET_LIDAR_INFO = 11;
+
+let detailNode = document.getElementById("detail");
+
+//URL배열 처리 선언된 상수로 직접 URL 가져옴 
+const arrUrlList = [
+	"/getTrafficInfo.do",		//0
+	"/getWaitingLineInfo.do",		//1
+	"/getLinkSpdInfo.do",		//2
+	"/getLinkVolInfo.do",		//3
+	"",							//4
+	"/getSzoneUnitInfo.do",		//5
+	"/getSzoneEachInfo.do",		//6
+	"/getDeviceInfo.do",		//7
+];
+
+//지도클릭하고 팝업 띄울 때 사용
+let link_id;
+let gubun;
+//func_resetPopup() 사용되는 변수
+const RESET = 5;
+const RESET_DEV = 6
+const RESET_DEL = 7;
+
+let popupNode = document.getElementById("popup");
+function func_showBaseMap() {
+	//배경지도. 국토정보플랫폼
+	backgroudLayer = new ol.layer.Tile(wmtEmapOption2('korean_map', true));
+}
+
+function func_mapClickEvt(evt, mapNum) {
+	coordinate = evt.coordinate;
+	switch(mapNum) {
+		case CROSS_TRAFFIC_PAGE : {
+			func_CrossTrafficMapClickEvt(evt);
+			break;
+		}
+		case WATING_LINE_PAGE : {
+			func_waitingMapClickEvt(evt);
+			break;
+		}
+		case LINK_SPD_PAGE : { //3
+			func_spdMapClickEvt(evt);
+			break;
+		}
+		case LINK_VOL_PAGE : { //4
+			func_volMapClickEvt(evt);
+			break;
+		}
+		case SZONE_PAGE : {
+			func_szoneMapClickEvt(evt);
+			break;
+		}
+		
+	}
+}
+
+function func_resetPopup(evt) {
+	let target = evt.target.id;
+	console.log("11111111111111 ", target)
+	switch (target) {
+		case 'popup-closer' : {
+			resetCase(RESET);
+			resetCase(RESET_DEV);
+			resetCase(RESET_DEL);
+			if (detailNode != null) {
+				detailNode.style.display = 'none';
+			}
+			return false;
+		}
+		case '' : {
+			if (overlay === undefined) {
+			}
+			else if ( overlay != undefined && target != 'popup-detail-button' && target != 'device-id-button'){
+				resetCase(RESET);
+				resetCase(RESET_DEV);
+				resetCase(RESET_DEL);
+				if (detailNode != null) {
+				detailNode.style.display = 'none';
+			}
+				return false;
+			}
+		}
+		case 'detail-closer' : {
+			resetCase(RESET_DEL);
+			if (detailNode != null) {
+				detailNode.style.display = 'none';
+			}
+		}
+		case undefined : {
+			resetCase(RESET);
+		}
+	}
+}
+function func_resetDetail() {
+	resetCase(RESET_DEL);
+	detailNode.style.display = 'none';
+}
+
+function resetCase(URL_NUM) {
+	switch (URL_NUM) {
+		case RESET : {
+			let resetList = document.querySelectorAll('.reset');
+			for(var i=0; i<resetList.length; i++) {
+				resetList[i].innserText = '';
+			}
+			
+			let resetPopList = document.querySelectorAll('.reset-pop');
+			for(var i=0; i<resetPopList.length; i++) {
+				resetPopList[i].remove();
+			}
+			if (document.getElementById('popup-closer') != null) {
+				document.getElementById('popup-closer').blur();
+			}
+			let basemap_oberlays = baseMap.getOverlays().getArray();
+
+			basemap_oberlays.forEach(function(overlay) {
+				baseMap.removeOverlay(overlay);
+			});
+			//overlay.setPosition(undefined);
+			break;
+		}
+		case RESET_DEV : {
+			let resetDevList = document.querySelectorAll('.reset-dev');
+			for(var i=0; i<resetDevList.length; i++) {
+				resetDevList[i].remove();
+			}
+			break;
+		}
+		case RESET_DEL : {
+			let resetDelList = document.querySelectorAll('.reset-del');
+			for(var i=0; i<resetDelList.length; i++) {
+				resetDelList[i].remove();
+			}
+			
+			let smtlTable= document.getElementById("smtlDetail");
+			let vdslTable = document.getElementById("vdslDetail");
+			let cctvTable= document.getElementById("cctvDetail");
+			let lidarTable= document.getElementById("lidarDetail");
+			if (smtlTable != null) {
+				smtlTable.style.display = 'none';
+				vdslTable.style.display = 'none';
+				cctvTable.style.display = 'none';
+				lidarTable.style.display = 'none';
+			}
+			break;
+		}
+	}
+}
