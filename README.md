@@ -15,32 +15,39 @@ _1. 메인화면 및 교차로 교통량_
 - 교차로별 음영유형 시각화
 - 하단 타임바 기능 구현
 
+
 ![교차로 교통량 화면](src/main/resources/static/img/IMG_0186.png)
 _2. 교차로 교통량_
 - 교차로 아이콘 클릭 시 지도 이벤트 발생
 - 교차로별 교통량 정보 조회
+  
 
-![대기행렬 길이 화면](src/main/resources/static/img/IMG_0186.png)
+![대기행렬 길이 화면](src/main/resources/static/img/IMG_0187.png)
 _3. 대기행렬 길이_
 - 마우스 오버 이벤트 -> 대기행렬 길이 조회
+
 
 ![차로별 표현 공통 화면](src/main/resources/static/img/IMG_0188.png)
 _4. 차로별 음영구간 화면(공통)_
 - 링크-속도 | 링크-교통량 | 음영구간 3메뉴의 공통 화면
 - 차로 및 차선 표현 방식은 같음, 조회 데이터가 다름.
 
+
 ![링크-속도 화면](src/main/resources/static/img/IMG_0193.png)
 _5. 링크-속도_
 - 차로 선택 시 교통 정보 조회
+
 
 ![링크-교통량 화면](src/main/resources/static/img/IMG_0189.png)
 _6. 링크-교통량_
 - 차로 선택 시 교통 정보 조회
 
+
 ![음영구간 화면](src/main/resources/static/img/IMG_0191.png)
 _7. 음영구간(차로 통합)_
 - 줌값 7.5 미만일 시 모든 차로 교통정보 통합 조회
 - [수집장치 확인] -> 장치별 교통정보 조회
+
 
 ![음영구간 화면2](src/main/resources/static/img/IMG_0192.png)
 _8. 음영구간(차로 개별)_
